@@ -122,6 +122,74 @@ The comamnd TYPE A switches the file transfer to ASCII Mode, while TYPE 1 switch
 
 Notice in the STAT output that the server explicitly states "Control connection is plain text" and "Data connections will be plain text". This confirms that everything, including credentials, is transmitted without encryption.
 
+Difference between ASCII mode and binary mode in ftp via telnet
+
+When using FTP via Telnet, you can switch between ASCII mode and binary mode depending on the type of data you’re transferring. The key difference lies in how the data is interpreted and transmitted.
+
+ASCII Mode: Used for text files (e.g., .txt, .html, .csv, source code files).
+
+How it works:
+
+1. Transfers data as characters (text).
+2. Performs character encoding conversion if needed (e.g., different newline formats between systems).
+
+Binary Mode: Used for non-text files, such as jpeg, executables etc.
+
+How it works
+
+1. Transfers data byte-by-byte exactly as is.
+2. No conversion or interpretation is performed.
+
+|  Feature | ASCII Mode | Binary Mode |
+|----------|------------|-------------|
+| Data type | All Text files | All file types |
+|Conversion| Yes (line endings, encoding) |No conversion at all|
+| Risk of Corruption | Yes (for non-text files) | No|
+| Transfer method | Character-based | Byte-Byte|
+| Default use case | .txt, .html | .jpeg,.exe |
+
+Using FTP CLient :
+
+Instead of using the telnet client if you need to run the ftp client - Execute the command ftp <IP Address>
+
+After logging in successfully, you get the FTP prompt, ftp>, to execute various FTP commands. In the example below, ls lists the files, ascii switches to ASCII mode since the target is a text file (not binary), and get FILENAME initiates the file transfer by establishing a separate data channel.
+
+
+<img width="887" height="528" alt="image" src="https://github.com/user-attachments/assets/f7393a31-3ba3-43ca-84f6-4b50e7f0d2fe" />
+
+Annonymous FTP:
+
+Some FTP servers allow anonymous login, typically using the username anonymous or ftp with any email address as the password (or no password at all). Anonymous FTP was historically used for public file distribution, such as software downloads and documentation. During penetration testing, always try an anonymous login when you discover an FTP server.
+
+Anonymous FTP servers might contain sensitive files that were accidentally exposed, configuration backups, or provide a way to upload malicious files if write access is enabled.
+
+FTP Servers and Clients
+There are various FTP server software options available:
+
+1. vsftpd (Very Secure FTP Daemon) is one of the most common FTP servers on Linux systems.
+2. ProFTPDis highly configurable and modular.
+3. Pure-FTPd(opens in new tab) focuses on security and simplicity.
+4. On Windows, IIS includes FTP server capabilities.
+   
+For FTP clients, in addition to the console FTP client commonly found on Linux systems, you can use a GUI-based client such as FileZilla. Note that major web browsers have removed FTP support in recent years, so browser-based FTP access is no longer available.
+
+Security Implications:
+
+Because FTP sends login credentials, commands, and files in cleartext, FTP traffic is an easy target for attackers. Anyone capturing network traffic can see usernames and passwords, file contents being transferred, directory listings revealing server structure, and the commands showing what actions users are performing. If you must use FTP, restrict it to isolated networks or use FTPS with TLS encryption. For most purposes, SFTP over SSH is the recommended alternative
+
+Questions:
+
+1. For this task, use the FTP client on the AttackBox to connect to 10.65.151.200. The credentials are frank / D2xc9CgD.
+
+<img width="655" height="404" alt="image" src="https://github.com/user-attachments/assets/6f3c80c3-5a87-409d-b3b6-cf29abdea8fb" />
+
+<img width="651" height="257" alt="image" src="https://github.com/user-attachments/assets/c9a1e23c-e113-4b5d-af0d-c3785565a7ae" />
+
+Flag: THM{364db6ad0e3ddfe7bf0b1870fb06fbdf}
+
+
+
+
 
 
 
