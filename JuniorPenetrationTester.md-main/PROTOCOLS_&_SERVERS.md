@@ -187,6 +187,91 @@ Questions:
 
 Flag: THM{364db6ad0e3ddfe7bf0b1870fb06fbdf}
 
+**Simple Mail Transfer Protocol:**
+
+Email is one of the most used services on the Internet. There are various configurations for email servers; for instance, you may set up an email system to allow local users to exchange emails with each other with no access to the Internet. However, this task considers the more general setup where different email servers connect over the Internet.
+
+Email Delivery Components
+
+Email delivery over the Internet requires the following components:
+
+1. Mail User Agent (MUA): The email client (e.g., Thunderbird, Outlook, a webmail interface).
+2. Mail Submission Agent (MSA): Receives mail from the MUA, checks for errors, and forwards it.
+3. Mail Transfer Agent (MTA): Routes and delivers mail between servers.
+4. Mail Delivery Agent (MDA): Stores the email in the recipient's mailbox for retrieval.
+
+<img width="630" height="329" alt="image" src="https://github.com/user-attachments/assets/e7186e51-4c2c-42c5-962b-68299aad48fd" />
+
+The figure shows the following five steps that an email needs to go through to reach the recipient's inbox:
+
+1. The MUA has an email message to be sent. It connects to the MSA to submit the message.
+2. The MSA receives the message, checks for any errors before transferring it to the MTA, which is commonly hosted on the same server.
+3. The MTA sends the email message to the MTA of the recipient. The MTA can also function as an MSA.
+4. A typical setup has the MTA server also functioning as the MDA.
+5. The recipient collects their email from the MDA using their email client (MUA).
+
+If the above steps sound confusing, consider the following analogy:
+
+1. You (MUA) want to send postal mail.
+2. The post office employee (MSA) checks the postal mail for any issues before your local post office (MTA) accepts it.
+3. The local post office checks the mail destination and sends it to the post office (MTA) in the correct country.
+4. The post office (MTA) delivers the mail to the recipient's mailbox (MDA).
+5. The recipient (MUA) regularly checks the mailbox for new mail. They notice the new mail and take it.
+
+Email Protocols
+
+In the same way you follow a protocol to communicate with an HTTP server, you rely on email protocols to talk with an MTA and an MDA. The protocols are:
+
+1. Simple Mail Transfer Protocol (SMTP) for sending email
+2. Post Office Protocol version 3 (POP3) or Internet Message Access Protocol (IMAP) for receiving email
+
+SMTP is explained in this task. POP3 and IMAP are covered in the following two tasks.
+
+Simple Mail Transfer Protocol (SMTP) is used to communicate with an MTA server. The original SMTP uses cleartext, where all commands are sent without encryption. However, modern email infrastructure uses several ports with different security models:
+
+1. Port 25 is the traditional SMTP port used for server-to-server communication (MTA to MTA). It is often blocked by ISPs for residential connections to prevent spam. On port 25, encryption is optional and negotiated via STARTTLS.
+2.  Port 587 is the submission port, used by email clients (MUA) to submit messages to their mail server (MSA). This is the recommended port for sending email and typically requires authentication. TLS encryption is negotiated via the STARTTLS command.
+3.  Port 465 was originally designated for SMTPS (SMTP over implicit TLS), then deprecated, and has since been reinstated. On this port, TLS encryption begins immediately upon connection.
+
+Manual Sending Email via Telnet
+
+Because SMTP can use cleartext, you can use a basic Telnet client to connect to an SMTP server and act as an email client (MUA), sending a message. Once connected, issue helo hostname (or ehlo hostname for extended SMTP) and then start composing the email.
+
+After helo, the commands mail from: and rcpt to: indicate the sender and the recipient. When the email message is ready, the data command begins the message body. The message is ended by typing a period on a line by itself (. followed by Enter). The SMTP server then queues the message.
+
+**Email Spoofing:**
+
+Notice something important in the example above: the "from" address was specified manually, and the server accepted it without verifying that the sender actually controls that email address. This is how email spoofing works. SMTP was designed in an era of trusted networks and has no built-in mechanism to verify sender identity.
+
+Security Implications
+
+Understanding SMTP is important for security professionals because:
+
+1. Email remains the primary vector for phishing attacks.
+2. Misconfigured mail servers can be used as open relays for spam.
+3. Cleartext SMTP exposes email content and credentials to network sniffing.
+4. Knowledge of SMTP helps you understand email header analysis during incident response.
+
+During penetration tests, you might test for open relay configurations, attempt email spoofing to assess security awareness, or analyse email headers to trace the origin of suspicious messages.
+
+Questions:
+
+Using the AttackBox terminal, connect to the SMTP port of the target VM. What is the flag that you can get?
+
+
+THM{5b31ddfc0c11d81eba776e983c35e9b5}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
