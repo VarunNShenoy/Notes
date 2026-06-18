@@ -607,6 +607,52 @@ You will still see the term "SSL" used colloquially (such as "SSL certificate"),
 
 The common protocols covered so far send data in cleartext, making it possible for anyone with access to the network to capture, save, and analyse the exchanged messages. The image below shows the ISO/OSI network layers. The protocols covered so far in this room are on the application layer. Encryption can be added via the presentation layer. As a result, data will be presented in an encrypted format (ciphertext) instead of its original form.
 
+**Location of TLS Fits in the Network Model:**
+
+![TLS_FITS_in_Network_Model](SSL_Layer_location_in_OSI_Model.png)
+
+It is worth noting that the OSI model is a conceptual simplification. In practice, TLS operates between the transport and application layers rather than mapping neatly to a single OSI layer. However, the diagram is useful for understanding that encryption sits below the application protocol, wrapping its data before transmission.
+
+Upgrading Protocols with TLS:
+
+An existing cleartext protocol can be upgraded to use encryption via TLS. The following table lists the protocols covered so far and their default ports before and after the encryption upgrade via TLS.
+
+| Protocol	| Default Port |	Secured Protocol	| Default Port with TLS|
+|-----------|--------------|--------------------|----------------------|
+| HTTP |	80	| HTTPS |	443 |
+| FTP	| 21 |	FTPS	| 990 |
+| SMTP|	25|	SMTPS|	465|
+| POP3	110|	POP3S	|995|
+| IMAP|	143 |	IMAPS |	993 |
+
+TLS is not limited to web and email protocols. DNS can also be secured using TLS. DNS over TLS (DoT) encrypts DNS queries by wrapping standard DNS traffic inside a TLS connection, typically on **port 853**. A related approach, DNS over HTTPS (DoH), sends DNS queries as HTTPS requests on port 443. Both prevent eavesdropping on DNS lookups, which would otherwise reveal which websites a user is visiting.
+
+**There are two approaches to adding TLS to a protocol:**
+
+1. **Implicit TLS** uses a dedicated port (as shown in the table above). The connection is encrypted from the start. When you connect to port 443 for HTTPS or port 993 for IMAPS, TLS negotiation begins immediately.
+
+2. **STARTTLS** allows upgrading an existing cleartext connection to TLS on the same port. The client connects on the standard port (e.g., port 25 for SMTP), and then issues a STARTTLS command to upgrade the connection to TLS. This approach is common for email protocols. For SMTP, port 587 (submission) with STARTTLS is the recommended configuration for mail clients.
+
+Both approaches provide encryption. However, implicit TLS is generally preferred because STARTTLS can be vulnerable to downgrade attacks if not properly implemented. An attacker performing a MITM attack could strip the STARTTLS command from the communication, forcing the connection to remain in cleartext.
+
+**How HTTPS Works**
+
+Consider the case of HTTP. Initially, to retrieve a web page over HTTP, the web browser would need to perform at least the following two steps:
+
+1. Establish a TCP connection with the remote web server.
+2. Send HTTP requests to the web server, such as GET and POST requests.
+
+HTTPS requires an additional step to encrypt the traffic. The new step takes place after establishing a TCP connection and before sending HTTP requests. As a result, HTTPS requires at least the following three steps:
+
+1. Establish a TCP connection.
+2. Establish a TLS connection.
+3. Send HTTP requests to the web server.
+
+**The TLS Handshake**
+
+To establish a TLS connection, the client needs to perform a handshake with the server. The handshake differs between TLS versions. Here is a simplified overview of the TLS 1.2 handshake:
+
+![SSL_HandShake](SSL_Handshake.png)
 
 
 
