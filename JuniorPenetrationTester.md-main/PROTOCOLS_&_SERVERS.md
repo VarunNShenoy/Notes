@@ -265,7 +265,7 @@ Post Office Protocol 3 (POP3)
 
 Post Office Protocol version 3 (POP3) is a protocol used to download email messages from a Mail Delivery Agent (MDA) server, as shown in the figure below. The mail client connects to the POP3 server, authenticates, downloads the new email messages, and then (optionally) deletes them from the server.
 
-![POP3 Working](JuniorPenetrationTester.md-main/POP3.png)
+![POP3 Working](POP3.png)
 
 POP3 Ports and Encryption
 
