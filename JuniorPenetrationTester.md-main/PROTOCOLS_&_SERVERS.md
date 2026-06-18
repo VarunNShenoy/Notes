@@ -406,6 +406,29 @@ Protocol Reference:
 | Telnet |	23	| Remote Access	| Cleartext |	SSH	| 22 |
 
 
+**Protocols and Servers 2**
+
+Telnet
+HTTP
+FTP
+SMTP
+POP3
+IMAP
+
+Above mentioned protocols  were designed decades ago when security was not a primary concern. They transmit data, including credentials, in cleartext. While the protocols themselves are still in use, modern deployments almost always use encrypted versions: HTTPS instead of HTTP, SFTP or FTPS instead of FTP, SMTPS instead of SMTP, and so on. Telnet has been largely replaced by SSH for remote administration. Understanding the insecure versions helps you recognise misconfigurations, legacy systems, and the underlying mechanics that the secure versions build upon.
+
+Servers implementing these protocols are subject to different kinds of attacks:
+
+1. Sniffing Attack (Network Packet Capture)
+2. Man-in-the-Middle (MITM) Attack
+3. Password Attack (Authentication Attack)
+4. Vulnerabilities
+   
+From a security perspective, you always need to think about what you aim to protect. Consider the security triad: Confidentiality, Integrity, and Availability (CIA). Confidentiality refers to keeping the contents of communications accessible only to the intended parties. Integrity is the assurance that any data sent is accurate, consistent, and complete when reaching its destination. Availability refers to being able to access the service when you need it. Different parties will put varying emphasis on these three. For instance, confidentiality would be the highest priority for an intelligence agency. Online banking will put most emphasis on the integrity of transactions. Availability is of the highest importance for any platform making money by serving ads.
+
+Knowing that you are protecting Confidentiality, Integrity, and Availability (CIA), an attack aims to cause Disclosure, Alteration, and Destruction (DAD). The figure below reflects this relationship.
+
+
 
 
 
