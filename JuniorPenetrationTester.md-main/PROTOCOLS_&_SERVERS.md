@@ -274,6 +274,53 @@ Like other protocols covered in this room, POP3 was designed without encryption:
 Port 110 is the default POP3 port using cleartext. Some servers support upgrading the connection to TLS using the STLS command (similar to STARTTLS in SMTP).
 Port 995 is used for POP3S (POP3 over implicit TLS). The connection is encrypted from the start.
 
+Most email providers today require or strongly encourage POP3S on port 995. However, you may still encounter plaintext POP3 on internal networks, legacy systems, or misconfigured servers.
+
+POP3 Commands
+
+| Command | Description |
+|---------|-------------|
+| USER username | Identifies the user|
+| Pass password | Authenticates with the password |
+| STAT | Returns the number of messages and the total size |
+| LIST | Lists all messages with their sizes |
+| RETR n | Retrieves message number n |
+| DELE n | Marks message n for deletion |
+| RSET |Resets (unmarks) messages marked for deletion |
+| QUIT | Ends the session and deletes marked messages |
+
+
+POP3 Behaviour: Download and Delete
+
+Based on the default settings, the mail client deletes the mail message after it downloads it. This "download and delete" model means:
+
+1. Emails are stored locally on your device, not on the server.
+2. Once downloaded, the email is only accessible from that specific device.
+3. If your device is lost or damaged, the emails are gone (unless backed up).
+4. Storage on the mail server is minimised.
+
+POP3 vs IMAP: When to Use Each
+
+POP3 is still useful in specific scenarios:
+
+1. When you want to access email offline and have limited or unreliable internet connectivity
+2. When you need to minimise server-side storage
+3. When you only access email from a single device
+4. For archiving emails locally
+
+However, IMAP has largely replaced POP3 for most users because of its synchronisation capabilities.
+
+Security Implications
+
+From a security perspective, finding a POP3 server (especially on port 110) during a penetration test presents opportunities. Credentials sent over cleartext POP3 can be captured through network sniffing, password attacks can be conducted against POP3 authentication, and successful access to a mailbox may reveal sensitive information, credentials for other systems, or password reset links.
+
+Questions: 
+
+1. Connect to the VM (10.66.149.42) at the POP3 port. Authenticate using the username frank and password D2xc9CgD. What is the response you get to STAT? --> +OK 0 0
+
+2. How many email messages are available to download via POP3 on 10.66.149.42? --> 0
+
+
 
 
 
