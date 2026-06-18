@@ -397,7 +397,7 @@ Conclusion:
 Protocol Reference: 
 
 | Protocol|	TCP Port |	Application(s)	| Data Security |	Secure Alternative	| Secure Port |
-|---------|----|------|-------------------|---------------|----------------------|--------------|
+|---------|----------|-------------------|---------------|----------------------|--------------|
 | FTP |	21	| File Transfer |	Cleartext	|FTPS or SFTP	| 990 (FTPS), 22 (SFTP) |
 | HTTP |	80	| Worldwide Web |	Cleartext	| HTTPS	| 443|
 | IMAP|	143| 	Email (MDA) |	Cleartext	| IMAPS	| 993 |
