@@ -428,8 +428,184 @@ From a security perspective, you always need to think about what you aim to prot
 
 Knowing that you are protecting Confidentiality, Integrity, and Availability (CIA), an attack aims to cause Disclosure, Alteration, and Destruction (DAD). The figure below reflects this relationship.
 
+![Relationship](Screenshot 2026-06-18 202257.png)
+
+These attacks directly affect the security of the system. Network packet capture violates confidentiality and leads to the disclosure of information. A successful password attack can also lead to disclosure. A Man-in-the-Middle (MITM) attack breaks the system's integrity as it can alter the communicated data. This room focuses on these three attacks because they are integral to protocol design and server implementation.
+
+The Modern Attack Landscape
+
+While the fundamental attack categories remain the same, the landscape has evolved:
+
+- Sniffing attacks are harder on properly configured networks due to widespread TLS adoption, but they remain effective against misconfigured services, internal networks without encryption, and legacy systems.
+- MITM attacks are mitigated by technologies like HSTS (HTTP Strict Transport Security), certificate pinning, and Certificate Transparency logs, but they can still succeed when these protections are absent or improperly implemented.
+- Password attacks have evolved beyond simple brute force. Attackers now use credential stuffing (trying leaked username/password pairs from breaches), password spraying (trying common passwords across many accounts), and leverage massive breach databases.
+
+Vulnerabilities are of a broader spectrum, and exploited vulnerabilities have different impacts on target systems. For instance, exploiting a Denial of Service (DoS) vulnerability can affect the system's availability, while exploiting a Remote Code Execution (RCE) vulnerability can lead to more severe damage. A vulnerability by itself creates a risk; damage can occur only when the vulnerability is exploited. Vulnerabilities are not covered in this room as they have their own module, Vulnerability Research.
+
+This room focuses on how a protocol can be upgraded or replaced to protect against disclosure and alteration, protecting the confidentiality and integrity of transmitted data. Hydra, a powerful tool for testing password strength by attempting authentication with wordlists, is also introduced. Understanding how attackers approach credential attacks helps you appreciate why strong passwords, account lockout policies, and multi-factor authentication are essential defences.
+
+**Sniffing Attack:**
+
+A sniffing attack refers to using a network packet capture tool to collect information about the target. When a protocol communicates in cleartext, the data exchanged can be captured by a third party to analyse. A simple network packet capture can reveal information such as the content of private messages and login credentials if the data is not encrypted in transit.
+
+**Where Sniffing Attacks Are Still Relevant**
+
+You might think that sniffing attacks are outdated, given the widespread adoption of TLS encryption. However, they remain a significant threat in several scenarios:
+
+- Internal corporate networks where traffic between systems may not be encrypted
+- Legacy systems that still use cleartext protocols (older mail servers, embedded devices, industrial control systems)
+- Misconfigured services where TLS is available but not enforced
+- IoT devices that often use unencrypted protocols for communication
+- Wireless networks where attackers within range can capture traffic
+- After a successful MITM attack that downgrades or strips encryption
+
+During internal penetration tests and red team engagements, sniffing remains a valuable technique for gathering credentials and understanding how systems communicate.
+
+**Packet Capture Tools**
+
+A sniffing attack can be conducted using an Ethernet (802.3) network card, provided that the user has proper permissions (root permissions on Linux and administrator privileges on Windows). There are many programs available to capture network packets. The following are the most common:
+
+1. Tcpdump is a free, open-source command-line interface (CLI) program that has been ported to work on many operating systems. It is lightweight and available on most Linux systems by default.
+2. Wireshark is a free open-source graphical user interface (GUI) program available for several operating systems, including Linux, macOS, and Windows. It provides powerful filtering, protocol dissection, and visualisation capabilities.
+3. Tshark is a CLI alternative to Wireshark that uses the same dissection engine. It is useful for scripting and automation.
+
+Other tools worth knowing about include tcpflow for reassembling TCP streams, ngrep for pattern matching in network traffic, and NetworkMiner for extracting files and images from captured traffic. There are also several specialised tools for capturing passwords and complete messages. However, this can still be achieved by Tcpdump and Wireshark with some added effort.
+
+**Practical Example: Capturing POP3 Credentials**
+
+Consider a user checking email messages using POP3. The following example uses Tcpdump to capture the username and password.
+
+This attack requires access to the network traffic. An attacker could achieve this via a wiretap, a switch with port mirroring configured, ARP spoofing on a local network, or a compromised system on the same network segment. Alternatively, the traffic can be accessed by launching a successful Man-in-the-Middle (MITM) attack.
+
+The command used is sudo tcpdump port 110 -A. The sudo prefix is required because packet captures require root privileges. The port 110 filter limits captured packets to those exchanged with the POP3 server (POP3 uses port 110 by default). The -A flag displays the contents of captured packets in ASCII format, making cleartext credentials readable in the output.
+
+![Initial_Connection_POP3](initial_connection_pop3.png)
+
+![tcpdump_username_capture](tcpdump_username_capture.png)
+
+![tcpdump_pass_capture](tcpdump_pass_capture.png)
+
+In the terminal output above, unimportant packets have been removed for clarity. The username and password were sent in separate packets. The first packet explicitly displays USER frank, while the last packet reveals the password PASS D2xc9CgD.
+
+Wireshark can achieve the same results. In the Wireshark window below, the filter field contains pop. With only POP3 traffic displayed, the captured username and password are visible.
+
+![Wireshark_Username&Password_Capture](Wireshark_Username&Password_capture.png)
+
+Usefull tcpdump filters
+
+1. Capture traffic on a specific port --> sudo tcpdump port 110 -A
+2. Capture traffic to/from specific host --> sudo tcpdump <IP_Address> -A
+3. Capture HTTP Traffic --> sudo tcpdump port 80 -A
+4. Capture FTP traffic --> sudo tcpdump port 21 -A
+5. Write captured packets to a file --> sudo tcpdump -w capture.pcap
+6. Read and Analyze capture file --> tcpdump -r capture.pcap -A
+
+**Mitigation**
+
+The primary mitigation is adding an encryption layer on top of the network protocol. Transport Layer Security (TLS) has been added to HTTP, FTP, SMTP, POP3, IMAP, and many others. For remote access, Telnet has been replaced by the secure alternative Secure Shell (SSH).
+
+Additional mitigations include:
+
+1. Network segmentation limits which systems can see each other's traffic by dividing the network into isolated zones.
+2. Encrypted VLANs and tunnels protect sensitive traffic even on internal networks.
+3. 802.1X port-based authentication requires devices to authenticate before gaining network access, preventing unauthorised devices from connecting and sniffing traffic.
+4. Zero trust architecture is a security model that treats all network traffic as potentially hostile, encrypting all communications regardless of whether they originate inside or outside the network perimeter.
+5. Monitoring for ARP spoofing and other traffic redirection techniques helps detect sniffing attempts in progress.
+
+**Questions:**
+
+1. What do you need to add to the command sudo tcpdump to capture only Telnet traffic? --> port 23
+2. What is the simplest display filter you can use with Wireshark to show only IMAP traffic? --> IMAP
 
 
+**Man in the Middle Attack**
+
+A Man-in-the-Middle (MITM) attack occurs when a victim (A) believes they are communicating with a legitimate destination (B) but is unknowingly communicating with an attacker (E). In the figure below, A requests the transfer of $20 to M. However, E alters this message and replaces the original value with a new one. B receives the modified message and acts on it
+
+![Man-in-the-MiddleAttack](Man_in_the_Middle_attack.png)
+
+This attack is relatively simple to carry out if the two parties do not confirm the authenticity and integrity of each message. In some cases, the chosen protocol does not provide secure authentication or integrity checking. Some protocols have inherent insecurities that make them susceptible to this kind of attack.
+
+**How MITM Attacks Work**
+
+For an attacker to position themselves between two communicating parties, they typically need to redirect traffic through their system. Common techniques include:
+
+**ARP Spoofing** is effective on local networks. The attacker sends forged ARP (Address Resolution Protocol) messages to associate their MAC address with the IP address of the default gateway or target system. As a result, traffic intended for those systems is sent to the attacker instead.
+
+**DNS Spoofing** involves providing false DNS responses to redirect victims to attacker-controlled servers. This can happen through compromised DNS servers, DNS cache poisoning, or by responding to DNS queries faster than the legitimate server.
+
+**Rogue Access Points** are fake wireless access points set up by attackers. When victims connect to these networks (often named to look like legitimate networks such as Airport_WiFi_Free), all their traffic flows through the attacker's system.
+
+**BGP Hijacking** operates at the internet routing level, where attackers announce false BGP routes to redirect traffic through their infrastructure. This is a more sophisticated attack, typically targeting specific organisations or regions.
+
+
+**Tools for MITM Attacks**
+
+Many tools can aid in carrying out MITM attacks. Understanding these helps you recognise what attackers can do and why mitigations matter:
+
+**Bettercap** is the modern successor to Ettercap and is actively maintained. It supports ARP spoofing, DNS spoofing, HTTP/HTTPS proxying, and has a modular architecture for various attack scenarios.
+
+**Ettercap** is a classic tool for MITM attacks on LANs. While still functional, Bettercap is generally preferred for modern assessments. Ettercap has three different interfaces:
+
+***Curses (Text-based)**: ettercap -CAn interactive, menu-driven interface inside the terminal, providing a balance of visual navigation without relying on a full desktop environment.
+***GTK+ (Graphical):** ettercap -GA full GUI with windows and menus, making it easier to manage lists of hosts, plugins, and attacks using your mouse.
+***Text (Console):** ettercap -TA plain text interface that outputs data directly to the command line, ideal for scripting or automation.
+
+**mitmproxy** is an interactive HTTPS proxy that allows inspection and modification of traffic. It is particularly useful for analysing and manipulating HTTP/HTTPS communications.
+
+**Responder** is designed for Windows environments and exploits name resolution protocols such as LLMNR (Link-Local Multicast Name Resolution) and NBT-NS (NetBIOS Name Service). These are fallback protocols that Windows systems use when standard DNS resolution fails. Responder listens for these broadcast queries and responds with its own IP address, tricking victims into sending authentication credentials to the attacker. This is a common technique during internal penetration tests of Active Directory environments.
+
+**MITM Against Encrypted Traffic**
+
+MITM attacks can target HTTPS and other encrypted protocols through several approaches:
+
+1. SSL Stripping downgrades HTTPS connections to HTTP. When a victim tries to connect to a website, the attacker intercepts the request, establishes an HTTPS connection with the legitimate server, but serves the content to the victim over unencrypted HTTP. The victim may not notice the missing padlock icon, especially if they did not explicitly type https://.
+
+2. Fake Certificates involve the attacker presenting their own certificate and establishing separate encrypted connections with both parties. This works if the victim accepts an invalid certificate warning or if the attacker has compromised a Certificate Authority (CA).
+
+3. Compromised or Rogue CAs represent a more serious threat. If an attacker controls a trusted CA (or obtains a fraudulent certificate from one), they can generate valid-looking certificates for any domain.
+
+**Modern Defences Against MITM**
+
+Modern security mechanisms make MITM attacks significantly harder than they were a decade ago:
+
+**HTTPS Everywhere:** Most websites now use HTTPS by default. Major browsers mark HTTP sites as "Not Secure", and some have begun blocking mixed content entirely.
+
+**HSTS (HTTP Strict Transport Security)** tells browsers to only connect via HTTPS for a specified period. Once a browser has seen an HSTS header for a domain, it will refuse to connect over HTTP, preventing SSL stripping attacks. Many major sites are also on the HSTS preload list, meaning browsers ship with knowledge that these sites should only be accessed via HTTPS.
+
+**Certificate Transparency (CT)** requires CAs to log all issued certificates to public, auditable logs. This makes it much harder for attackers to obtain fraudulent certificates without detection. Browsers can check these logs and reject certificates that are not properly logged.
+
+**Certificate Pinning** allows applications to specify exactly which certificates or public keys are valid for their connections. This is common in mobile apps and prevents attacks even if a CA is compromised. However, it makes certificate rotation more complex.
+
+**DANE (DNS-based Authentication of Named Entities)** uses DNSSEC to publish certificate information in DNS records, providing an alternative trust path that does not rely solely on the CA system.
+
+Despite these protections, MITM attacks remain possible when users ignore certificate warnings, applications do not properly validate certificates, the target uses cleartext protocols, the attacker can compromise a trusted CA, internal networks lack encryption, or legacy systems do not support modern security features.
+
+MITM can also affect other cleartext protocols such as FTP, SMTP, and POP3. The fundamental mitigation requires the use of cryptography. The solution lies in proper authentication along with encryption or signing of exchanged messages. With the help of Public Key Infrastructure (PKI) and trusted root certificates, Transport Layer Security (TLS) protects against MITM attacks when properly implemented.
+
+**Questions**
+
+1. How many different interfaces does Ettercap offer? --> 3
+2. In how many ways can you invoke Bettercap? --> 3
+
+**Transport Layer Security**
+
+A Brief History of SSL and TLS
+SSL (Secure Sockets Layer) originated when the World Wide Web began to see new applications, such as online shopping and sending payment information. Netscape introduced SSL in 1994, with SSL 3.0 being released in 1996. Eventually, more security was needed, and the TLS (Transport Layer Security) protocol was introduced in 1999 with TLS 1.0.
+
+Since then, the protocol has evolved significantly:
+
+1. SSL 2.0 and 3.0 are deprecated and considered insecure. They should never be used.
+2. TLS 1.0 and 1.1 were deprecated in 2021 due to known vulnerabilities. Major browsers no longer support them.
+3. TLS 1.2 (2008) remains widely used and is considered secure when properly configured with modern cipher suites.
+4. TLS 1.3 (2018) is the current standard. It removes outdated cryptographic algorithms, reduces handshake latency, and provides forward secrecy by default.
+
+You will still see the term "SSL" used colloquially (such as "SSL certificate"), but in practice, all modern systems use TLS. When someone says "SSL," they almost always mean TLS.
+
+
+**Where TLS Fits in the Network Model**
+
+The common protocols covered so far send data in cleartext, making it possible for anyone with access to the network to capture, save, and analyse the exchanged messages. The image below shows the ISO/OSI network layers. The protocols covered so far in this room are on the application layer. Encryption can be added via the presentation layer. As a result, data will be presented in an encrypted format (ciphertext) instead of its original form.
 
 
 
