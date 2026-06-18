@@ -399,11 +399,11 @@ Protocol Reference:
 | Protocol|	TCP | Port |	Application(s)	| Data Security |	Secure Alternative	| Secure Port |
 |---------|----|------|-------------------|---------------|----------------------|--------------|
 | FTP |	21	| File Transfer |	Cleartext	|FTPS or SFTP	| 990 (FTPS), 22 (SFTP) |
-| HTTP |	80	| Worldwide Web |	Cleartext	| HTTPS	443|
-| IMAP|	143| 	Email (MDA) |	Cleartext	| IMAPS	993 |
-| POP3|	110|	Email (MDA)	|Cleartext	| POP3S	995|
+| HTTP |	80	| Worldwide Web |	Cleartext	| HTTPS	| 443|
+| IMAP|	143| 	Email (MDA) |	Cleartext	| IMAPS	| 993 |
+| POP3|	110|	Email (MDA)	|Cleartext	| POP3S	| 995|
 | SMTP| 	25	| Email (MTA) |	Cleartext|	SMTPS or SMTP with STARTTLS |	465 (SMTPS), 587 (Submission) |
-| Telnet |	23	| Remote Access	| Cleartext |	SSH	22 |
+| Telnet |	23	| Remote Access	| Cleartext |	SSH	| 22 |
 
 
 
