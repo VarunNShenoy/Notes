@@ -261,6 +261,13 @@ Using the AttackBox terminal, connect to the SMTP port of the target VM. What is
 
 THM{5b31ddfc0c11d81eba776e983c35e9b5}
 
+Post Office Protocol 3 (POP3)
+
+Post Office Protocol version 3 (POP3) is a protocol used to download email messages from a Mail Delivery Agent (MDA) server, as shown in the figure below. The mail client connects to the POP3 server, authenticates, downloads the new email messages, and then (optionally) deletes them from the server.
+
+
+
+
 
 
 
