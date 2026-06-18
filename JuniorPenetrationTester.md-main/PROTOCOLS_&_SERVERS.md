@@ -267,6 +267,14 @@ Post Office Protocol version 3 (POP3) is a protocol used to download email messa
 
 
 
+POP3 Ports and Encryption
+
+Like other protocols covered in this room, POP3 was designed without encryption:
+
+Port 110 is the default POP3 port using cleartext. Some servers support upgrading the connection to TLS using the STLS command (similar to STARTTLS in SMTP).
+Port 995 is used for POP3S (POP3 over implicit TLS). The connection is encrypted from the start.
+
+
 
 
 
