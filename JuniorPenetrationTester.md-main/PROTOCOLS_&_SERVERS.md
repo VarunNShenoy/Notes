@@ -325,6 +325,89 @@ Questions:
 STAT results give you the answer count to be zero
 
 
+**Internet Message Access Protocol (IMAP)**
+
+Internet Message Access Protocol (IMAP) is more sophisticated than POP3. IMAP makes it possible to keep email synchronised across multiple devices (and mail clients). If you mark an email message as read when checking your email on your smartphone, the change is saved on the IMAP server (MDA) and replicated on your laptop when you synchronise your inbox.
+
+Why IMAP Became the Standard
+IMAP has largely replaced POP3 for most users because of how email is accessed today. People check email from their phones, laptops, tablets, and web browsers, often switching between devices throughout the day. IMAP's server-side storage model makes this seamless:
+
+1. Emails remain on the server and are accessible from any device.
+2. Read/unread status, folders, and flags are synchronised across all clients.
+3. Deleting an email on one device removes it everywhere.
+4. Search can be performed server-side without downloading all messages.
+
+This is in contrast to POP3's download-and-delete model, where each device has its own separate copy of messages.
+
+IMAP Ports and Encryption
+
+Like other email protocols, IMAP was originally designed without encryption:
+
+1. Port 143 is the default IMAP port using cleartext. Many servers support upgrading the connection to TLS using the STARTTLS command.
+2. Port 993 is used for IMAPS (IMAP over implicit TLS). The connection is encrypted from the start.
+
+Understanding the IMAP Response
+
+Notice the server's initial response includes CAPABILITY, which lists what features the server supports. This is useful information during reconnaissance:
+
+1. IMAP4rev1 indicates the IMAP version.
+2. STARTTLS means the server supports upgrading to an encrypted connection.
+3. IDLE allows the server to push notifications of new mail.
+4. ACL indicates access control list support.
+
+The LIST command revealed the folder structure: INBOX, Trash, Drafts, Templates, and Sent. This tells you about the mailbox organisation and confirms successful authentication.
+
+Common IMAP Commands
+
+| Command | Description |
+|---------|-------------|
+| LOGIN username password | Authenticates the user |
+| LIST "" "*" | Lists all mailbox folders |
+| SELECT folder | Opens a folder for read/write access |
+| EXAMINE folder | Opens a folder for read-only access |
+|FETCH n BODY[]| Retrieves message number n |
+| SEARCH criteria | Searches for messages matching criteria |
+| STORE n +FLAGS (\Seen) | Marks message n as read |
+| LOGOUT | Ends the session |
+
+IMAP vs Webmail
+
+Many users today access email through web interfaces (Gmail, Outlook.com, etc.) rather than dedicated mail clients. These web interfaces use HTTPS to secure the connection between the browser and the mail provider's servers. However, the underlying mail storage still uses IMAP concepts, and many users configure traditional mail clients alongside webmail access.
+
+Understanding IMAP remains relevant because enterprise environments often run their own mail servers with IMAP access, penetration testers may encounter IMAP services during assessments, mobile devices and desktop mail clients still use IMAP extensively, and compromised IMAP credentials provide deeper access than webmail in some scenarios.
+
+Security Implications
+IMAP sends the login credentials in cleartext, as shown in the command LOGIN frank D2xc9CgD. Anyone observing the network traffic would be able to see Frank's username and password.
+
+Beyond credential exposure, compromised IMAP access is particularly valuable to attackers because:
+
+1. Persistent access: Unlike POP3, emails remain on the server. An attacker with IMAP credentials can continue reading new emails indefinitely.
+2. Historical data: The entire mailbox history is accessible, potentially containing years of sensitive communications.
+3. Password reset abuse: Attackers can search for password reset emails to gain access to other accounts.
+4. Business email compromise: Access to corporate email enables invoice fraud, impersonation, and data theft.
+5. Lateral movement: Emails often contain credentials, internal documentation, and information useful for further attacks.
+
+
+Questions: 
+
+What is the default port used by IMAP? --> 143
+
+Conclusion: 
+
+Protocol Reference: 
+
+| Protocol|	TCP | Port |	Application(s)	| Data Security |	Secure Alternative	| Secure Port |
+|---------|----|------|-------------------|---------------|----------------------|--------------|
+| FTP |	21	| File Transfer |	Cleartext	|FTPS or SFTP	| 990 (FTPS), 22 (SFTP) |
+| HTTP |	80	| Worldwide Web |	Cleartext	| HTTPS	443|
+| IMAP|	143| 	Email (MDA) |	Cleartext	| IMAPS	993 |
+| POP3|	110|	Email (MDA)	|Cleartext	| POP3S	995|
+| SMTP| 	25	| Email (MTA) |	Cleartext|	SMTPS or SMTP with STARTTLS |	465 (SMTPS), 587 (Submission) |
+| Telnet |	23	| Remote Access	| Cleartext |	SSH	22 |
+
+
+
+
 
 
 
