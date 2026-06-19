@@ -654,6 +654,78 @@ To establish a TLS connection, the client needs to perform a handshake with the 
 
 ![SSL_HandShake](SSL_Handshake.png)
 
+1. ClientHello: The client sends a message indicating its capabilities, including supported TLS versions, cipher suites, and a random value.
+2. ServerHello: The server responds with the selected connection parameters, its certificate (a digital file signed by a Certificate Authority to prove the server's identity), and its own random value.
+3. Key Exchange: The client and server exchange information needed to generate the shared secret key. The exact process depends on the chosen cipher suite.
+4. Finished: Both sides confirm the handshake completed successfully and switch to encrypted communication
+
+
+**TLS 1.3 Improvements**
+
+TLS 1.3 significantly improves upon earlier versions:
+
+1. Faster handshake: TLS 1.3 requires only one round trip (1-RTT) to establish a connection, compared to two round trips for TLS 1.2. It even supports 0-RTT resumption for returning clients, though this has some security trade-offs.
+2. Forward secrecy by default: All TLS 1.3 cipher suites provide forward secrecy, meaning that if the server's private key is compromised in the future, past recorded sessions cannot be decrypted.
+3. Simplified cipher suites: Outdated and insecure algorithms have been removed. There are no more choices that could lead to weak configurations.
+4. Encrypted handshake: More of the handshake is encrypted, revealing less information to observers.
+
+**Modern Certificate Ecosystem**
+
+The certificate landscape has evolved significantly:
+
+**Let's Encrypt** launched in 2015 and provides free, automated TLS certificates. This removed the cost barrier that previously prevented many websites from using HTTPS. As a result, HTTPS adoption has grown from under 50% of web traffic in 2015 to over 95% today.
+
+**Certificate Transparency (CT)** requires CAs to log all issued certificates to public, auditable logs. Browsers can check these logs and reject certificates that are not properly logged. This makes it much harder for attackers to obtain fraudulent certificates without detection.
+
+**Short-lived certificates** are becoming more common. Let's Encrypt certificates are valid for only 90 days, encouraging automation and reducing the window of exposure if a certificate is compromised. Some organisations use certificates valid for just hours or days.
+
+**Automated Certificate Management Environment (ACME)** is the protocol used by Let's Encrypt and other CAs to automate certificate issuance and renewal. Tools like Certbot make it straightforward to obtain and renew certificates automatically.
+
+**Testing TLS Configurations**
+
+As a security professional, you may need to assess TLS configurations. Useful tools include:
+
+1. **testssl.sh**: A command-line tool that checks a server's TLS configuration for supported protocols, cipher suites, and common vulnerabilities. It is the best choice for detailed assessments, especially against internal systems that are not publicly accessible.
+2. **sslyze:** A Python tool for analysing SSL/TLS configurations, useful for automation and integration into CI/CD pipelines.
+3. **SSL Labs (ssllabs.com)**: A web-based service that provides detailed analysis of public-facing HTTPS servers. It is the quickest option for a one-off assessment of a public website.
+4. **nmap ssl-enum-ciphers:** An Nmap script that enumerates supported cipher suites as part of a broader port scan.
+
+Common issues to look for include support for deprecated protocols (TLS 1.0/1.1), weak cipher suites, missing forward secrecy, and certificate problems.
+
+**Questions**
+
+DNS can also be secured using TLS. What is the three-letter acronym of the DNS protocol that uses TLS? --> DNS on TLS (DoT)
+
+**Secure Shell**
+
+Secure Shell (SSH) was created to provide a secure way for remote system administration. It allows you to securely connect to another system over the network and execute commands on the remote system. The "S" in SSH stands for secure, which can be summarised as:
+
+1. You can confirm the identity of the remote server.
+2. Exchanged messages are encrypted and can only be decrypted by the intended recipient.
+3. Both sides can detect any modification in the messages.
+
+The above three points are ensured by cryptography. In more technical terms, they are part of confidentiality and integrity, made possible through the proper use of different encryption algorithms.
+
+SSH has become the universal standard for remote administration of servers, network devices, and cloud infrastructure. It completely replaced Telnet for interactive remote access due to its security guarantees.
+
+**SSH Authentication Methods**
+
+To use SSH, you need an SSH server and an SSH client. The SSH server listens on port 22 by default. The SSH client can authenticate using several methods:
+
+**Password authentication** is the simplest method. The user provides a username and password, which are transmitted over the encrypted SSH connection. While the password is protected in transit, this method is vulnerable to brute force attacks if weak passwords are used.
+
+**Public key authentication** is the recommended method for regular use. You generate a key pair consisting of a private key (kept secret on your machine) and a public key (placed on servers you want to access). When connecting, the server challenges you to prove you possess the private key without actually transmitting it.
+
+**Certificate-based authentication** is used in larger organisations. An SSH Certificate Authority signs user and host keys, eliminating the need to distribute public keys to every server. This scales better and allows for key expiration and revocation.
+
+**Multi-factor authentication (MFA)** combines multiple methods. Many organisations now require both a key and a one-time password from an authenticator app.
+
+**Connecting via SSH**
+
+On Linux, macOS, and Windows 10/11, you can connect to an SSH server using the command ssh username@MACHINE_IP. This command tries to connect to the server at the specified IP address with the given login name. If an SSH server is listening on the default port, it will ask you to provide the password for that user (or use your key if configured). Once authenticated, you have access to the target server's terminal.
+
+
+
 
 
 
