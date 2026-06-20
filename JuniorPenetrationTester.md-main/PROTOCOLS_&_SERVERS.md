@@ -724,9 +724,12 @@ To use SSH, you need an SSH server and an SSH client. The SSH server listens on 
 
 On Linux, macOS, and Windows 10/11, you can connect to an SSH server using the command ssh username@MACHINE_IP. This command tries to connect to the server at the specified IP address with the given login name. If an SSH server is listening on the default port, it will ask you to provide the password for that user (or use your key if configured). Once authenticated, you have access to the target server's terminal.
 
+ Once the correct password was entered, access to the remote system's terminal was granted. SSH is reliable for remote administration because the username and password were sent encrypted. All commands executed on the remote system are sent over an encrypted channel.
 
 
+**Host Key Verification**
 
+If this is the first time we connect to an system via ssh - fingerprint needs to be confirmed 
 
 
 
