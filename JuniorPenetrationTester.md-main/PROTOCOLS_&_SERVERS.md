@@ -729,8 +729,116 @@ On Linux, macOS, and Windows 10/11, you can connect to an SSH server using the c
 
 **Host Key Verification**
 
-If this is the first time we connect to an system via ssh - fingerprint needs to be confirmed 
+If this is the first time we connect to an system via ssh - fingerprint needs to be confirmed. In the case of SSH, there is usually no third party to verify if the public key is valid, so this must be done manually or through out-of-band verification.
 
+When you connect to a new server, you will see a message like:
+
+The authenticity of host 'MACHINE_IP' can't be established.
+ED25519 key fingerprint is SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+
+Ideally, you should verify this fingerprint through a separate channel (such as a secure configuration management system or by asking the server administrator) before accepting it. Once accepted, the host key is stored in ~/.ssh/known_hosts. If the key ever changes unexpectedly, SSH will warn you, which could indicate a MITM attack or that the server was reinstalled.
+
+**SSH Key Generation**
+
+To set up key-based authentication, generate a key pair using ssh-keygen:
+
+# Generate an Ed25519 key (recommended for modern systems)
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# For systems that don't support Ed25519, use RSA with 4096 bits
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+Ed25519 keys are the current recommendation. They are shorter, faster, and considered more secure than RSA keys. RSA keys should use at least 4096 bits if Ed25519 is not available.
+
+Your private key is stored in ~/.ssh/id_ed25519 (or ~/.ssh/id_rsa) and should be protected with a strong passphrase. The public key is stored with a .pub extension and can be safely shared.
+
+To enable key-based login on a server, add your public key to the ~/.ssh/authorized_keys file on the remote system:
+
+# Copy your public key to a remote server
+ssh-copy-id mark@MACHINE_IP
+
+**Useful SSH Options**
+
+SSH has many useful features for penetration testers and system administrators:
+
+# Connect on a non-standard port
+ssh -p 2222 mark@MACHINE_IP
+
+# Use a specific private key
+ssh -i ~/.ssh/custom_key mark@MACHINE_IP
+
+# Jump through a bastion/jump host to reach an internal server
+ssh -J bastion.example.com mark@internal-server
+
+# Local port forwarding (access remote service through local port)
+ssh -L 8080:localhost:80 mark@MACHINE_IP
+
+# Dynamic port forwarding (SOCKS proxy)
+ssh -D 9050 mark@MACHINE_IP
+
+# Run a single command without interactive shell
+ssh mark@MACHINE_IP "cat /etc/passwd"
+
+**SSH Config File**
+
+For frequent connections, you can create shortcuts in ~/.ssh/config:
+
+Host webserver
+    HostName MACHINE_IP
+    User mark
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+
+Host internal
+    HostName 10.10.10.50
+    User admin
+    ProxyJump bastion.example.com
+With this configuration, you can simply type ssh webserver instead of the full command.
+
+**Secure File Transfer**
+
+SSH provides secure file transfer capabilities through several methods:
+
+SFTP (SSH File Transfer Protocol) is the recommended method for interactive file transfers. It provides a familiar FTP-like interface over an encrypted SSH connection:
+
+sftp mark@MACHINE_IP
+
+SCP (Secure Copy Protocol) has traditionally been used for simple file copies. However, the OpenSSH project has deprecated scp in favour of sftp due to security concerns with the SCP protocol. SCP still works but displays a deprecation warning on newer systems:
+
+# Copy from remote to local
+scp mark@MACHINE_IP:/home/mark/archive.tar.gz ~/
+
+# Copy from local to remote
+scp backup.tar.bz2 mark@MACHINE_IP:/home/mark/
+rsync over SSH is preferred for transferring large amounts of data or synchronising directories, as it only transfers changed portions of files:
+
+rsync -avz -e ssh /local/directory/ mark@MACHINE_IP:/remote/directory/
+
+
+**SSH vs FTPS vs SFTP**
+
+It is worth clarifying the difference between these secure file transfer options:
+
+1. SFTP runs over SSH (port 22) and is the most common choice for secure file transfers today.
+2. FTPS is FTP secured with TLS (port 990 for implicit TLS). It is a different protocol from SFTP despite the similar names.
+3. SCP also runs over SSH but is being phased out in favour of SFTP.
+
+For most use cases, SFTP is the recommended choice because it uses the same authentication and encryption as SSH, simplifying management.
+
+SSH Hardening Considerations
+
+When assessing or configuring SSH servers, consider these security settings in /etc/ssh/sshd_config:
+
+1. Disable password authentication (PasswordAuthentication no) after setting up key-based auth.
+2. Disable root login (PermitRootLogin no) to force users to authenticate as regular users first.
+3. Use AllowUsers or AllowGroups to restrict which accounts can log in via SSH.Change the default port to reduce automated scanning noise (security through obscurity, not a strong control).
+4. Enable fail2ban or similar to block repeated failed authentication attempts.
+5. Use modern key exchange and cipher algorithms by configuring KexAlgorithms, Ciphers, and MACs.
+
+Questions:
+
+Use SSH to connect to MACHINE_IP as mark with the password XBtc49AB. Using uname -r, find the Kernel release? --> 5.15.0-119-generic (take ssh session and run the command uname -a)
+Use SSH to download the file book.txt from the remote system. How many KBs did scp display as download size? 415 KB
 
 
 
