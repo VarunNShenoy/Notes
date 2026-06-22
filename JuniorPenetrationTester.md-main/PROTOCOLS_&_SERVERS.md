@@ -838,22 +838,155 @@ When assessing or configuring SSH servers, consider these security settings in /
 Questions:
 
 Use SSH to connect to MACHINE_IP as mark with the password XBtc49AB. Using uname -r, find the Kernel release? --> 5.15.0-119-generic (take ssh session and run the command uname -a)
-Use SSH to download the file book.txt from the remote system. How many KBs did scp display as download size? 415 KB
+Use SSH to download the file book.txt from the remote system. How many KBs did scp display as download size? 415 KB (SCP SYNTAX - scp source target)
+
+![SCP_CONNECTION](SCP_SSH_ANSWER.png)
+
+![SCP_ANSWER](SCP_ANSWER.png)
 
 
+**Password Spray**
+
+**Authentication Factors**
+
+Authentication, or proving your identity, can be achieved through one of the following, or a combination of two or more:
+
+1. Something you know, such as a password or PIN code.
+2. Something you have, such as a phone, security key, or smart card.
+3. Something you are, such as a fingerprint or facial recognition.
+4. This task focuses on attacks against passwords, the "something you know" factor.
+
+**Why Weak Passwords Persist**
+
+Based on the 150 million usernames and passwords leaked from the Adobe breach in 2013, the top ten passwords included 123456, password, qwerty, and similar obvious choices.
+
+Password habits have not improved significantly. Analysis of more recent breaches shows common passwords in the 2020s still include:
+
+123456 and variations (123456789, 12345678, 1234567890)
+password and Password1
+qwerty and qwerty123
+Company or service names with numbers (Summer2024, Welcome1)
+Sports teams and pop culture references
+The availability of massive breach databases has made password attacks more effective than ever. Attackers can cross-reference leaked credentials across services because many users reuse passwords.
+
+Types of Password Attacks
+
+Attacks against passwords have evolved beyond simple brute force:
+
+**Password Guessing** requires some knowledge of the target, such as their pet's name, birth year, favourite sports team, or children's names. Social media makes gathering this information easier than ever.
+
+**Dictionary Attack** attempts common words from a dictionary or wordlist. This is effective because many users choose real words or simple variations.
+
+**Brute Force Attack** tries all possible character combinations. This is exhaustive and time-consuming, but effective against short passwords. The search space grows exponentially with password length, which is why longer passwords are significantly more secure.
+
+**Credential Stuffing** uses username/password pairs leaked from previous breaches and tries them against other services. This exploits password reuse and is extremely effective. Attackers use automated tools to test millions of credentials across many sites simultaneously.
+
+**Password Spraying** tries a small number of commonly used passwords against many accounts. Instead of trying many passwords against one account (which triggers lockouts), an attacker tries one or two passwords against thousands of accounts. This evades account lockout mechanisms.
+
+**Hybrid Attacks** combine dictionary words with common patterns. For example, trying Summer with years appended (Summer2023, Summer2024) or common substitutions (P@ssw0rd, Adm1n!).
 
 
+**Wordlists and Breach Data**
 
+Over time, security researchers and attackers have compiled extensive wordlists containing leaked passwords from data breaches. One classic example is RockYou's list of breached passwords, which you can find on the AttackBox at /usr/share/wordlists/rockyou.txt.
 
+Modern wordlists go far beyond RockYou:
 
+1. SecLists is a collection of multiple wordlists for different purposes, available at /usr/share/seclists/ on many security distributions.
+2. CrackStation provides wordlists optimised for password cracking.
+3. Breach compilations contain billions of real passwords from various data breaches.
+4. The choice of wordlist should depend on your knowledge of the target. A French user might use French words. A company's employees might use the company name with years or seasons. Custom wordlists tailored to the target are often more effective than generic ones.
 
+THC Hydra
 
+THC Hydra(opens in new tab) is a fast and flexible password cracking tool that supports many protocols, including FTP, POP3, IMAP, SMTP, SSH, and all methods related to HTTP. It provides an automated way to try common passwords or entries from a wordlist against network services.
 
+The general command-line syntax is:
 
+hydra -l username -P wordlist.txt server service
 
+Where the following options are specified:
 
+1. -l username: The login name of the target.
+2. -P wordlist.txt: A text file containing passwords to try.
+3. server: The hostname or IP address of the target server.
+4. service: The service you are attacking (e.g., ftp, ssh, imap, pop3, smtp).
 
+Consider the following examples:
 
+# Attack FTP with username mark
+hydra -l mark -P /usr/share/wordlists/rockyou.txt 10.67.175.251 ftp
+
+# Alternative syntax (equivalent to above)
+hydra -l mark -P /usr/share/wordlists/rockyou.txt ftp://10.67.175.251
+
+# Attack SSH with username frank
+hydra -l frank -P /usr/share/wordlists/rockyou.txt 10.67.175.251 ssh
+
+# Attack IMAP with username lazie
+hydra -l lazie -P /usr/share/wordlists/rockyou.txt 10.67.175.251 imap
+
+# Attack with a list of usernames (credential stuffing style)
+hydra -L users.txt -P passwords.txt 10.67.175.251 ssh
+
+Useful Hydra Options
+
+| Option |	Description |
+|--------|--------------|
+| -l username |	Single username to attack |
+| -L users.txt	| File containing a list of usernames |
+| -p password	| Single password to try |
+| -P wordlist.txt |	File containing a list of passwords |
+| -s PORT	| Specify a non-default port|
+| -V or -vV	| Verbose output showing attempts |
+| -t n	 |Number of parallel connections (threads) |
+| -d	| Debug mode for troubleshooting| 
+| -f	| Stop after the first valid password found|
+| -w n |	Wait time between connections |
+
+Once the password is found, you can issue CTRL-C to end the process. In TryHackMe tasks, any attack is expected to finish within less than five minutes. In real-world scenarios, attacks take longer, and verbose or debug options help you monitor progress.
+
+Other Password Attack Tools
+
+While Hydra is excellent for network service attacks, other tools serve different purposes:
+
+1. Medusa is similar to Hydra but with a modular design. Some find it more stable for certain protocols.
+2. Ncrack is developed by the Nmap project and designed for high-speed parallel authentication testing.
+3. CrackMapExec (CME) / NetExec specialises in Windows/Active Directory environments and can spray passwords across SMB, WinRM, LDAP, and other protocols.
+4. Burp Suite Intruder is useful for attacking web-based login forms where Hydra's HTTP modules may not work correctly.
+5. Hashcat and John the Ripper are used for cracking password hashes offline rather than attacking live services. If you obtain password hashes (from a database breach, for example), these tools can recover the plaintext passwords much faster than attacking a live service.
+
+**Mitigating Password Attacks**
+
+Mitigation against password attacks depends on the target system. Modern defences include:
+
+Password Policies enforce minimum complexity constraints. Modern guidance such as NIST SP 800-63B (a U.S. government standard for digital identity guidelines) recommends focusing on password length over complexity rules, blocking known compromised passwords, and not requiring regular password changes unless there is evidence of compromise.
+
+Account Lockout temporarily or permanently locks an account after a certain number of failed attempts. This is effective against brute force but can be bypassed by password spraying or abused for denial of service.
+
+Throttling and Rate Limiting delay responses to login attempts. A few seconds of delay is tolerable for legitimate users but severely hinders automated tools. More sophisticated implementations use exponential backoff.
+
+CAPTCHA requires solving a challenge difficult for machines. Modern CAPTCHAs use behavioural analysis and risk scoring rather than just image recognition.
+
+Multi-Factor Authentication (MFA) requires additional verification beyond the password, such as a code from an authenticator app, SMS (though SMS is less secure), or a hardware security key. MFA is one of the most effective defences against password attacks.
+
+Passwordless Authentication eliminates passwords entirely using methods like:
+
+1. Passkeys (FIDO2/WebAuthn) use cryptographic keys stored on devices, replacing passwords with biometric or PIN verification.
+2. Magic links sent via email.
+3. Hardware security keys like YubiKeys.
+
+**Breached Password Detection** checks passwords against known breach databases during registration and login. Services like "Have I Been Pwned" provide APIs for this purpose.
+
+**Behavioural Analysis** detects anomalies such as login attempts from unusual locations, impossible travel scenarios, or patterns consistent with automated attacks.
+
+**IP-based Controls** including geofencing, blocking known malicious IPs, and requiring additional verification for new devices or locations.
+
+Using a combination of the above approaches provides defence in depth against password attacks. For high-security environments, moving towards passwordless authentication eliminates many of these attack vectors entirely.
+
+**Questions:**
+
+We learned that one of the email accounts is lazie. What is the password used to access the IMAP service on 10.67.175.251? --> butterfly 
 
 
 
