@@ -1,4 +1,4 @@
-Nmap, short for Network Mapper, is free, open-source software released under the GPL license, created by Gordon Lyon (Fyodor), a network security expert and open-source programmer. Nmap is an industry-standard tool for mapping networks, identifying live hosts, and discovering running services. Nmap’s scripting engine can further extend its functionality, from fingerprinting services to exploiting vulnerabilities. A Nmap scan usually goes through the steps shown in the figure below, although many are optional and depend on the command-line arguments you provide.
+<img width="654" height="294" alt="image" src="https://github.com/user-attachments/assets/b059cef2-1176-4321-8b38-af3e9a07b5ad" /><img width="1168" height="457" alt="image" src="https://github.com/user-attachments/assets/99ba735a-f779-46aa-91de-b0dabbe6b84a" />Nmap, short for Network Mapper, is free, open-source software released under the GPL license, created by Gordon Lyon (Fyodor), a network security expert and open-source programmer. Nmap is an industry-standard tool for mapping networks, identifying live hosts, and discovering running services. Nmap’s scripting engine can further extend its functionality, from fingerprinting services to exploiting vulnerabilities. A Nmap scan usually goes through the steps shown in the figure below, although many are optional and depend on the command-line arguments you provide.
 
 ![NMAP_SCAN](nmap_steps.png)
 
@@ -98,11 +98,187 @@ What is Nmap’s guess about the service running on port 53? --> domain
 
 Unprivileged users are limited to the connect scan. However, the default scan mode is a SYN scan, and it requires a privileged (root or sudo) user to run. SYN scan does not need to complete the TCP 3-way handshake; instead, it tears down the connection after receiving a response from the server. Because we didn’t establish a TCP connection, the scan is less likely to be logged. We can select this scan type by using the -sS option. The figure below shows how the TCP SYN scan works without completing the TCP 3-way handshake.
 
-![SYN_SCAN](NMAP_TCP_SCAN.png)
+![TCP_CONNECT_SCAN](TCP_Connect_Scan.png)
 
-![TCP_SCAN](NMAP_WIRESHARK_RESULTS.png)
+![TCP_SYN_SCAN](TCP_SYNC_SCAN.png)
 
 To better see the difference between the two scans, consider the following screenshot. In the upper half of the following figure, we can see TCP connect scan -sT traffic. Any open TCP port will require Nmap to complete the TCP 3-way handshake before closing the connection. In the lower half of the following figure, we see how a SYN scan -sS does not need to complete the TCP 3-way handshake; instead, Nmap sends an RST packet once a SYN/ACK packet is received.
+
+Quesitons:
+
+After launching a TCP SYN scan, how many SYN-ACK packets are successfully received in AttackBox? --> 4
+How many ports are open on the target machine? --> 4
+
+
+**UDP Scan**
+
+UDP is a connectionless protocol; hence, it does not require a handshake for connection establishment. We cannot guarantee that a service listening on a UDP port would respond to our packets. However, if a UDP packet is sent to a closed port, an ICMP port unreachable error (type 3, code 3) is returned. You can select UDP scan using the -sU option; moreover, you can combine it with another TCP scan.
+
+The following figure shows that if we send a UDP packet to an open UDP port, we cannot expect a reply. Therefore, sending a UDP packet to an open port won’t tell us anything.
+
+![UDP_SCAN_REQUEST](UDP_Scan.png)
+
+![UDP_Scan_Response](UDP_NMAP_ICMP_REPLY.png)
+
+However, as shown in the figure above, we expect to receive an ICMP type 3, code 3, destination unreachable, port unreachable message. In other words, the UDP ports that don’t generate any response are the ones that Nmap will state as open.
+
+In the Wireshark capture below, we can see that every closed port generates an ICMP destination unreachable (port unreachable) message.
+
+![UDP_WireShark_Results](UDP_WIRESHARK_RESULTS.png)
+
+![UDP_wireshark_results](UDP_Scan_results.png)
+
+**Questions:**
+
+What is the state of port number 161 over UDP in the target machine? --> Closed
+What is the service name according to Nmap on port 161? --> snmp
+
+**Fine-tuning scope and performances**
+
+You can specify the ports you want to scan instead of the default 1000 ports. Specifying the ports is intuitive by now. Let’s see some examples: 
+
+1. port list: -p22,80,443 will scan ports 22, 80 and 443.
+2. port range: -p1-1023 will scan all ports between 1 and 1023 inclusive, while -p20-25 will scan ports between 20 and 25 inclusive.
+
+You can request the scan of all ports by using -p-, which will scan all 65535 ports. If you want to scan the most common 100 ports, add -F. Using --top-ports 10 will check the ten most common ports.
+
+You can control the scan timing using -T<0-5>. -T0 is the slowest (paranoid), while -T5 is the fastest. According to the Nmap manual page, there are six templates:
+
+1. paranoid (0)
+2. sneaky (1)
+3. polite (2)
+4. normal (3)
+5. aggressive (4)
+6. insane (5)
+
+To avoid IDS alerts, you might consider -T0 or -T1. For instance, -T0 scans one port at a time and waits 5 minutes between sending each probe, so you can guess how long scanning one target would take to finish. If you don’t specify any timing, Nmap uses normal -T3. Note that -T5 is the most aggressive in terms of speed; however, this can affect the accuracy of the scan results due to the increased likelihood of packet loss. Note that -T4 is often used during CTFs and when learning to scan on practice targets, whereas -T1 is often used during real engagements where stealth is more important.
+
+Alternatively, you can choose to control the packet rate using --min-rate <number> and --max-rate <number>. For example, --max-rate 10 or --max-rate=10 ensures that your scanner is not sending more than ten packets per second.
+
+Moreover, you can control probing parallelisation using --min-parallelism <numprobes> and --max-parallelism <numprobes>. Nmap probes targets to discover which hosts are live and which ports are open; the probing parallelisation parameter specifies the number of such probes that can run in parallel. For instance, --min-parallelism=512 pushes Nmap to maintain at least 512 probes in parallel; these 512 probes are related to host discovery and open ports.
+
+Control Parallelisation: Modify probe concurrency to balance speed and reliability.
+
+Example: nmap -Pn --min-parallelism=512 --max-parallelism=1024 10.66.176.97
+
+--min-parallelism forces a minimum number of probes
+--max-parallelism caps concurrency
+Higher values = faster scans but risk dropped packets
+
+**Questions:**
+
+What is the option to scan all the TCP ports between 5000 and 5500? --> -p5000-5500
+How can you ensure that Nmap will run at least 64 probes in parallel? --> --min-parallelism=64
+What option would you add to make Nmap very slow and paranoid? -T0
+
+**Summary:**
+
+This room covered three types of scans.
+
+| Port Scan Type |	Example Command |
+|----------------|-------------------|
+|TCP Connect Scan	|nmap -sT 10.66.131.0|
+| TCP SYN Scan	| sudo nmap -sS 10.66.131.0 |
+| UDP Scan	| sudo nmap -sU 10.66.131.0 |
+
+
+These scan types should get you started discovering running TCP and UDP services on a target host.
+
+| Option |	Purpose |
+|--------|----------|
+| -p-	| all ports|
+| -p1-1023|	scan ports 1 to 1023|
+|-F	100 | most common ports|
+| -r	| scan ports in consecutive order|
+| -T<0-5> |	-T0 being the slowest and T5 the fastest|
+| --max-rate 50	|rate <= 50 packets/sec|
+| --min-rate 15	| rate >= 15 packets/sec| 
+| --min-parallelism 100	| at least 100 probes in parallel |
+
+**When to use NMAP Connect, sync or upd scan**
+
+| Scan Type | Privileges Needed | Stealth | Speed | Best Use Case |
+| --- | --- | --- | --- | --- |
+| **TCP Connect (-sT)** | None | Low | Moderate | Reliable scans without root access |
+| **TCP SYN (-sS)** | Root/Admin | High | Fast | Stealthy, large-scale port scans |
+| **UDP (-sU)** | Root/Admin | Moderate | Slow | Detecting UDP services (DNS, SNMP) |
+
+
+**NMAP Advanced Port Scans**
+
+Advanced Port Scan
+
+Types Null Scan - Send a TCP packet with no flags set to infer open ports from the lack of a response.
+FIN Scan - Send a TCP packet with only the FIN flag to probe ports without initiating a connection.
+Xmas Scan - Set FIN, PSH, and URG flags simultaneously to probe ports behind stateless firewalls.
+Maimon Scan - Set FIN and ACK flags together to exploit a behaviour found in certain BSD-derived systems.
+ ACK Scan - Send a packet with only the ACK flag to map firewall rules rather than discover open ports.
+Window Scan - Examine the TCP Window field in RST responses to differentiate open from closed ports.
+Custom Scan - Use --scanflags to craft your own TCP flag combinations for tailored probing.
+
+Evasion and Spoofing Techniques
+
+Spoofing IP - Forge the source IP address using -S so scan traffic appears to originate from a different host.
+Spoofing MAC - Forge the source MAC address using --spoof-mac when on the same local network as the target.
+Decoy Scan - Mix your real IP among multiple decoy addresses using -D to obscure the true scan source.
+Fragmented Packets - Split packets into smaller IP fragments using -f or -ff to evade firewalls and IDS.
+Idle/Zombie Scan - Use an idle third-party host with -sI to scan a target without revealing your own IP address.
+
+
+**TCP NULL Scan**
+
+The null scan does not set any flag, all six flag bits are set to zero. This scan can be used by using the filter -sN option. An TCP packet with no flags set will not trigger any response when it reaches an open port as shownn in the figure below.
+
+Therefore, from Nmap’s perspective, a lack of reply in a null scan indicates that either the port is open or a firewall is blocking the packet.
+
+![NMAP_NULL_SCAN](NULL_NMAP_SCAN.png)
+
+However, we expect the target server to respond with an RST packet if the port is closed. Consequently, we can use the lack of RST response to determine which ports are not closed: open or filtered.
+
+![NULL_Scan_Results](Null_scan_results.png)
+
+A Null Scan (-sN) in Nmap is a type of stealth TCP scan that sends packets with no flags set. It’s used in very specific scenarios where you want to probe systems quietly and potentially bypass simple filtering rules.
+
+**FIN Scan**
+
+The FIN scan sends a TCP packet with the FIN flag set. You can choose this scan type using the -sF option. Similarly, no response will be sent if the TCP port is open. Again, Nmap cannot be sure whether the port is open or whether a firewall is blocking traffic on this TCP port.
+
+![FIN_Scan](FIN_Scan.png)
+
+However, the target system should respond with an RST if the port is closed. Consequently, we will be able to identify which ports are closed and use this knowledge to infer which are open or filtered. It's worth noting that some firewalls will 'silently' drop the traffic without sending an RST.
+
+![FIN_Scan_Results](FIN_Nmap_scan_results.png)
+
+**Xmas Scan**
+
+The Xmas scan gets its name from the Christmas tree lights. An Xmas scan sets the FIN, PSH, and URG flags simultaneously. You can select the Xmas scan with the option -sX.
+
+As with the Null and FIN scans, receiving an RST packet indicates that the port is closed. Otherwise, it will be reported as open|filtered.
+
+The following two figures show the cases when the TCP port is open and when it is closed.
+
+![XMAS_SCAN](Xmas_Scan.png)
+
+![XMAS_SCAN_RESULTS](XMAS_SCAN_Results.png)
+
+**Questions:**
+
+In a null scan, how many flags are set to 1? -->0
+In a FIN scan, how many flags are set to 1? --> 1
+In a Xmas scan, how many flags are set to 1? --> 3
+Launch a FIN scan against the target VM. How many ports appear as open|filtered? --> 9
+Repeat your scan launching a null scan against the target VM. How many ports appear as open|filtered? --> 9
+
+
+
+
+
+
+
+
+
+
+
 
 
 
