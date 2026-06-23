@@ -102,9 +102,6 @@ Unprivileged users are limited to the connect scan. However, the default scan mo
 
 ![TCP_SCAN](NMAP_WIRESHARK_RESULTS.png)
 
-
-
-
 To better see the difference between the two scans, consider the following screenshot. In the upper half of the following figure, we can see TCP connect scan -sT traffic. Any open TCP port will require Nmap to complete the TCP 3-way handshake before closing the connection. In the lower half of the following figure, we see how a SYN scan -sS does not need to complete the TCP 3-way handshake; instead, Nmap sends an RST packet once a SYN/ACK packet is received.
 
 
