@@ -381,6 +381,132 @@ On the other hand, if you prefer to increase the size of your packets to make th
 
 If the TCP segment has a size of 64, and the -ff option is being used, how many IP fragments will you get? --> 4
 
+**IDLE/ Zombie Scans**
+
+Spoofing the source IP address can be an effective way to conduct stealthy scans. However, spoofing will only work in specific network setups. It requires you to be in a position to monitor traffic. Considering these limitations, spoofing your IP address is unlikely to be useful; however, we can give it a boost with the idle scan.
+
+The idle scan, or zombie scan, requires an idle system connected to the network that you can communicate with. Practically, Nmap will make each probe appear to come from the idle (zombie) host, then check whether the idle (zombie) host received any response to the spoofed probe. This is accomplished by checking the IP identification (IP ID) value in the IP header. You can run an idle scan using nmap -sI ZOMBIE_IP MACHINE_IP, where ZOMBIE_IP is the IP address of the idle host (zombie).
+
+The idle (zombie) scan requires the following three steps to discover whether a port is open:
+
+1. Trigger the idle host to respond so that you can record the current IP ID on the idle host.
+2. Send a SYN packet to a TCP port on the target. The packet should be spoofed to appear to come from the idle host's IP address (zombie).
+3. Trigger the idle machine again to respond so that you can compare the new IP ID with the one received earlier.
+
+we have the attacker system probing an idle machine, a multi-function printer. By sending a SYN/ACK, it responds with an RST packet containing its newly incremented IP ID.
+
+The attacker will send a SYN packet to the TCP port they want to check on the lab machine in the next step. However, this packet will use the idle host (zombie) IP address as the source. Three scenarios would arise. In the first scenario the TCP port is closed; therefore, the lab machine responds to the idle host with an RST packet. The idle host does not respond; hence, its IP ID is not incremented.
+
+
+In the second scenario, the TCP port is open, so the lab machine responds to the idle host (zombie) with a SYN/ACK. The idle host responds to this unexpected packet with an RST, incrementing its IP ID.
+
+In the third scenario, the lab machine does not respond at all due to firewall rules. This lack of response will result in the same outcome as with a closed port: the idle host won’t increment the IP ID.
+
+For the final step, the attacker sends another SYN/ACK to the idle host. The idle host responds with an RST packet, incrementing the IP ID by one again. The attacker needs to compare the IP ID of the RST packet received in the first step with the IP ID of the RST packet received in this third step. If the difference is 1, it means the port on the lab machine was closed or filtered. However, if the difference is 2, it means that the port on the target was open.
+
+
+It is worth repeating that this scan is called an idle scan because selecting an idle host is essential to its accuracy. If the “idle host” is busy, all the returned IP IDs would be useless.
+
+Questions: 
+
+You discovered a rarely-used network printer with the IP address 10.10.5.5, and you decide to use it as a zombie in your idle scan. What argument should you add to your Nmap command? --> -sI 10.10.5.5
+
+**Getting more details**
+
+You might consider adding --reason if you want Nmap to provide more details regarding its reasoning and conclusions. Consider the two scans below to the system; however, the latter adds --reason.
+
+Providing the --reason flag gives us the explicit reason why Nmap concluded that the system is up or a particular port is open. In the console output above, we can see that this system is considered online because Nmap “received arp-response.” On the other hand, we know the SSH port is open because Nmap received a “syn-ack” packet.
+
+![Reason_flag](Reason_flag.png)
+
+For more detailed output, you can consider using -v for verbose output or -vv for even more verbosity.
+
+If -vv does not satisfy your curiosity, you can use -d for debugging details or -dd for even more details. You can guarantee that using -d will create an output that extends beyond a single screen.
+
+**Questions:**
+
+Use Nmap with nmap -sS -F --reason MACHINE_IP to scan the VM. What is the reason provided for the stated port(s) being open? --> syn-ack
+
+**Summary**
+
+This room covered the following types of scans.
+
+| Port Scan Type | Example Command |
+|----------------|-----------------|
+|TCP Null Scan	| sudo nmap -sN MACHINE_IP |
+| TCP FIN Scan	| sudo nmap -sF MACHINE_IP |
+| TCP Xmas Scan	| sudo nmap -sX MACHINE_IP |
+|T CP Maimon Scan	| sudo nmap -sM MACHINE_IP|
+| TCP ACK Scan	|sudo nmap -sA MACHINE_IP|
+| TCP Window Scan	| sudo nmap -sW MACHINE_IP|
+| Custom TCP Scan	| sudo nmap --scanflags URGACKPSHRSTSYNFIN MACHINE_IP |
+| Spoofed Source IP	| sudo nmap -S SPOOFED_IP MACHINE_IP|
+|Spoofed MAC Address	|--spoof-mac SPOOFED_MAC|
+| Decoy Scan	nmap | -D DECOY_IP,ME MACHINE_IP |
+| Idle (Zombie) Scan	| sudo nmap -sI ZOMBIE_IP MACHINE_IP| 
+| Fragment IP data into 8 bytes |	-f |
+| Fragment IP data into 16 bytes |	-ff |
+
+| Option	| Purpose |
+|--------|---------|
+| --source-port PORT_NUM	| Specify source port number |
+|--data-length NUM	| Append random data to reach the given length| 
+
+These scan types rely on setting TCP flags in unexpected ways to prompt ports for a reply. Null, FIN, and Xmas scans provoke a response from closed ports, while Maimon, ACK, and Window scans provoke a response from open and closed ports.
+
+| Option |	Purpose |
+| --reason	| explains how Nmap made its conclusion |
+|-v	| verbose|
+| -vv	| very verbose|
+|-d	|debugging|
+|-dd	|more details for debugging|
+
+
+**Type of Scans and when to use.**
+
+| **Type / Option**                          | **When to Use**                       | **Reason / Purpose**                                     |
+| ------------------------------------------ | ------------------------------------- | -------------------------------------------------------- |
+| **TCP SYN Scan (-sS)**                     | Default scan with root access         | Fast, reliable, half-open → stealthier than full connect |
+| **TCP Connect Scan (-sT)**                 | No root privileges                    | Uses full handshake → more detectable but universal      |
+| **TCP Null Scan (-sN)**                    | Firewall evasion (Linux/Unix targets) | No flags set → helps identify open/filtered ports        |
+| **TCP FIN Scan (-sF)**                     | Bypass simple firewalls               | FIN packet avoids some filters                           |
+| **TCP Xmas Scan (-sX)**                    | Stealth scan alternative              | Sends FIN+URG+PSH → useful for evasion testing           |
+| **TCP Maimon Scan (-sM)**                  | Testing BSD/rare TCP behavior         | Exploits unusual FIN/ACK responses                       |
+| **TCP ACK Scan (-sA)**                     | Firewall rule mapping                 | Identifies filtered vs unfiltered ports (not open ports) |
+| **TCP Window Scan (-sW)**                  | When ACK scan is inconclusive         | Uses window size differences to detect open ports        |
+| **Custom Scan (--scanflags)**              | Advanced IDS/firewall testing         | Craft custom TCP flags → simulate attack patterns        |
+| **UDP Scan (-sU)**                         | Check UDP services (DNS, SNMP)        | Finds UDP-based services (slow, often filtered)          |
+| **Ping Scan (-sn)**                        | Host discovery only                   | Finds live hosts without port scanning                   |
+| **Service Detection (-sV)**                | Enumeration phase                     | Identifies service versions for vulnerability analysis   |
+| **OS Detection (-O)**                      | Identify target OS                    | Helps in system fingerprinting                           |
+| **Aggressive Scan (-A)**                   | Full reconnaissance                   | Combines OS, version detection, scripts, traceroute      |
+| **Decoy Scan (-D)**                        | Hide real source IP                   | Mixes fake IPs → confuses IDS attribution                |
+| **Idle Scan (-sI)**                        | Full anonymity                        | Uses zombie host → completely stealthy                   |
+| **Spoofed IP (-S)**                        | Test trust relationships              | Pretends to be another host (no response back easily)    |
+| **Spoofed MAC (--spoof-mac)**              | Bypass MAC filtering (LAN)            | Evades NAC / MAC-based controls                          |
+| **Fragment Packets (-f / -ff)**            | Bypass IDS/firewalls                  | Splits packets → may evade detection                     |
+| **Timing Templates (-T0–T5)**              | Control speed vs stealth              | T0 slow/stealthy → T5 fast/noisy                         |
+| **Rate Control (--min-rate / --max-rate)** | Tune scan performance                 | Avoid IDS or speed up scanning                           |
+| **Retries (--max-retries)**                | Slow/unreliable networks              | Reduce retries to speed up scans                         |
+| **Scan Delay (--scan-delay)**              | Avoid detection                       | Adds delay between packets                               |
+| **Verbose (-v / -vv)**                     | Debugging scans                       | Shows detailed output                                    |
+| **Output (-oN / -oX / -oG)**               | Reporting & logging                   | Saves results in different formats                       |
+| **Script Scan (-sC / --script)**           | Deep enumeration                      | Runs NSE scripts for vuln detection                      |
+| **Traceroute (--traceroute)**              | Network path analysis                 | Shows route to target                                    |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
