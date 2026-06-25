@@ -495,6 +495,11 @@ These scan types rely on setting TCP flags in unexpected ways to prompt ports fo
 | **Traceroute (--traceroute)**              | Network path analysis                 | Shows route to target                                    |
 
 
+**Nmap Post Port Scans**
+
+**Service Detection:**
+
+
 
 
 
