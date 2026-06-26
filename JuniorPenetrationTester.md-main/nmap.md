@@ -499,6 +499,113 @@ These scan types rely on setting TCP flags in unexpected ways to prompt ports fo
 
 **Service Detection:**
 
+Once nmap discovers open ports --> you can probe each port to identify the service running on it.
+
+Adding -sV to your nmap command will collect and determine service and version information for the open ports. You can control with --version-intensity LEVEL where the level ranges from 0 to 9 where 0 being the lightest and 9 being the most complete. -sV --version-light has an intensity of 2, while -sV --version-all has an intensity of 9.
+
+The console output above shows a simple Nmap stealth SYN scan with the -sV option. Adding the -sV option leads to a new column in the output showing the version for each detected service. For instance, in the case of TCP port 22 being open, instead of 22/tcp open ssh, we obtain 22/tcp open ssh OpenSSH 6.7p1 Debian 5+deb8u8 (protocol 2.0). Notice that the SSH protocol is guessed as the service because TCP port 22 is open; Nmap didn’t need to connect to port 22 to confirm. However, -sV required connecting to this open port to grab the service banner and any version information it can get, such as nginx 1.6.2. Hence, unlike the service column, the version column is not a guess.
+
+**Questions**
+
+1. What is the detected version for port 143? --> Dovecot imapd
+2. Which service did not have a version detected with --version-light? --> rpcbind
+
+!{Answers}(Service_Detection_answers.png)
+
+**OS Detection:**
+
+Nmap can detect the Operating System (OS) of a target based on its behaviour and any telltale signs in its network responses. OS detection can be enabled using -O; this is an uppercase O as in OS. In this example, we will run nmap -sS -O 10.67.150.106 on the AttackBox.
+
+Despite the lack of a precise match, the fingerprint data still provides useful clues. For example, TTL (Time to Live) refers to a value in each network packet that decrements as it passes through routers. Linux systems typically respond with a TTL of 64, while Windows systems commonly use 128. TCP sequence behaviour refers to how a system generates and increments TCP sequence numbers, which vary between operating systems and kernel versions. Service responses, such as the banners and protocol quirks observed on open ports, also differ between OS families. Together, these signals strongly indicate that the target is running a 64-bit Linux operating system
+
+!{OS DETECTION}(OS_DETECTION_NMAP.png)
+
+**Traceroute**
+
+NMAP can be used to trace route as well.
+If you want Nmap to find the routers between you and the target, just add --traceroute. In the following example, Nmap appended a traceroute to its scan results. Note that Nmap’s traceroute works slightly differently from the traceroute command found on Linux and macOS or tracert found on MS Windows. Standard traceroute starts with a packet with a low TTL (Time to Live) and increases it until it reaches the target. Nmap’s traceroute starts with a packet with a high TTL and keeps decrementing it.
+
+!{TraceRoute_Using_Nmap}(Traceroute-Namp.png)
+
+**Questions:**
+
+Per nmap, which one is the closest OS match after running with the nmap with -O option against 10.67.150.106? (Windows/Linux) --> Linux
+
+NMAP Scripting Engine(NSE)
+
+A script is a piece of code that does not need to be compiled. In other words, it remains in its original human-readable form and does not need to be converted to machine language. Many programs provide additional functionality via scripts; moreover, scripts enable adding custom functionality that was not available via built-in commands. Similarly, Nmap supports scripts written in Lua. A part of Nmap, the Nmap Scripting Engine (NSE) is a Lua interpreter that allows Nmap to execute Nmap scripts written in Lua. However, we don’t need to learn Lua to make use of Nmap scripts.
+
+Your Nmap default installation can easily contain close to 600 scripts. Take a look at your Nmap installation folder. On the AttackBox, navigate to the directory at /usr/share/nmap/scripts, and you will notice that there are hundreds of scripts conveniently named starting with the protocol they target
+
+You can specify to use any or a group of these installed scripts; moreover, you can install other users’ scripts and use them for your scan.
+
+ You can choose to run the scripts in the default category using --script=default or simply adding -sC. In addition to default(opens in new tab), categories include auth, broadcast, brute, default, discovery, dos, exploit, external, fuzzer, intrusive, malware, safe, version, and vuln. A brief description is shown in the following table.
+
+You can also specify the script by name using --script "SCRIPT-NAME" or a pattern such as --script "ftp*", which would include ftp-brute. If you are unsure what a script does, you can open the script file with a text reader, such as less, or a text editor. In the case of ftp-brute, it states: “Performs brute force password auditing against FTP servers.” You have to be careful as some scripts are pretty intrusive. Moreover, some scripts might be for a specific server and, if chosen at random, will waste your time with no benefit. As usual, make sure that you are authorised to launch such tests on the target server.
+
+Let’s consider a benign script, http-date, which we guess would retrieve the HTTP server date and time, and this is indeed confirmed in its description: “Gets the date from HTTP-like services. Also, it prints how much the date differs from local time…” On the AttackBox, we execute sudo nmap -sS -n --script "http-date" 10.67.150.106.
+
+**Questions**
+
+1. Knowing that Nmap scripts are saved in /usr/share/nmap/scripts on the AttackBox. What does the script http-robots.txt check for? --> disallowed entries
+2. Can you figure out the name for the script that checks for the remote code execution vulnerability MS15-034 (CVE-2015-1635)?http-vuln-cve2015-1635
+3. On the AttackBox, run Nmap with the default scripts -sC against 10.67.150.106. You will notice that a page is hosted on port 80. What is the http-title value? --> Welcome to nginx on Debian!
+4. Based on its description, the script ssh2-enum-algos “reports the number of algorithms (for encryption, compression, etc.) that the target SSH2 server offers.” What is the name of the server host key algorithm that relies on SHA2-512 and is supported by 10.67.150.106? --> rsa-sha2-512
+
+
+**Saving the output**
+
+The number of files can grow quickly, hindering your ability to find previous scan results. The three main formats are:
+
+1. Normal
+2. Grepable (grepable)
+3. XML
+
+**Normal**
+
+As the name implies, the normal format is similar to the output you get on the screen when scanning a target. You can save your scan in normal format by using -oN FILENAME; N stands for normal. In the AB, first enter the command nmap -oN scan.nmap 10.67.150.106.
+
+**Grappable**
+The grepable format has its name from the command grep; grep stands for Global Regular Expression Printer. In simple terms, it makes filtering the scan output for specific keywords or terms efficient. You can save the scan result in a grepable format using -oG FILENAME. The scan output, displayed above in normal format, is shown in the console below using grepable format. The normal output is 21 lines; however, the grepable output is only 4 lines. The main reason is that Nmap wants to make each line meaningful and complete when the user applies grep. As a result, the lines in the grepable output are so long that they are not convenient to read compared to the normal output.
+
+An example use of grep is grep KEYWORD TEXT_FILE; this command displays all lines containing the provided keyword. Let’s compare the output of using grep on normal output and grepable output. You will notice that the former does not include the host's IP address. Instead, it returned 80/tcp open http nginx 1.6.2, making it very inconvenient when sifting through the scan results of multiple systems. However, the latter provides enough information, such as the host’s IP address, in each line to make it complete.
+
+
+**XML**
+The third format is XML. You can save the scan results in XML format using -oX FILENAME. The XML format would be most convenient for processing the output in other programs. Conveniently enough, you can save the scan output in all three formats using -oA FILENAME to combine -oN, -oG, and -oX for normal, grepable, and XML.
+
+**Script Kiddie**
+
+A fourth format is script kiddie. You can see that this format is useless if you want to search the output for any interesting keywords or keep the results for future reference. However, you can use it to save the output of the scan nmap -sS 127.0.0.1 -oS FILENAME, display the output filename, and look 31337 in front of friends who are not tech-savvy.****
+
+**Questions:**
+
+1. What parameter is used to save the output in a greppable format? Write with a dash (-). --> -oG
+2. Is it possible to save Nmap output in XML format (yea/nay)? --> yea
+
+**Summary**
+
+| Option                    | Meaning                                             |
+|--------------------------|-----------------------------------------------------|
+| -sV                      | Determine service/version info on open ports         |
+| -sV --version-light      | Try the most likely probes (2)                       |
+| -sV --version-all        | Try all available probes (9)                         |
+| -O                       | Detect OS                                           |
+| --traceroute             | Run traceroute to the target                        |
+| --script=SCRIPTS         | Nmap scripts to run                                  |
+| -sC or --script=default  | Run default scripts                                  |
+| -A                       | Equivalent to -sV -O -sC --traceroute               |
+| -oN                      | Save output in normal format                        |
+| -oG                      | Save output in a grepable format                    |
+| -oX                      | Save output in XML format                           |
+| -oA                      | Save output in normal, XML and Grepable formats     |
+
+
+
+
+
+
+
 
 
 
