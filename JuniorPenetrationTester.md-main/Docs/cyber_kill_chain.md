@@ -180,7 +180,7 @@ Questions
 2. What principle limits who can access sensitive systems and data to minimise damage caused by an attacker? --> principle of least privilege
 3. What type of attack involves encrypting files and demanding payment in exchange for the decryption key? --> Ransomeware
 
-Conclusion
+
 
 Last Flag : THM{CKC_NJHERDX327}
 
