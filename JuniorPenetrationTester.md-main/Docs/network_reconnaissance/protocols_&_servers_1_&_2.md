@@ -318,7 +318,7 @@ Questions:
 
 1. Connect to the VM (10.66.149.42) at the POP3 port. Authenticate using the username frank and password D2xc9CgD. What is the response you get to STAT? --> +OK 0 0
 
-![POP3 Answeres](../Images/pop3_answers.png)
+![POP3 Answeres](../../Images/pop3_answers.png)
 
 3. How many email messages are available to download via POP3 on 10.66.149.42? --> 0
 
@@ -428,7 +428,7 @@ From a security perspective, you always need to think about what you aim to prot
 
 Knowing that you are protecting Confidentiality, Integrity, and Availability (CIA), an attack aims to cause Disclosure, Alteration, and Destruction (DAD). The figure below reflects this relationship.
 
-![Relationship](Screenshot 2026-06-18 202257.png)
+![Relationship](,,/,,/Images/cia_dad.png)
 
 These attacks directly affect the security of the system. Network packet capture violates confidentiality and leads to the disclosure of information. A successful password attack can also lead to disclosure. A Man-in-the-Middle (MITM) attack breaks the system's integrity as it can alter the communicated data. This room focuses on these three attacks because they are integral to protocol design and server implementation.
 
@@ -479,17 +479,17 @@ This attack requires access to the network traffic. An attacker could achieve th
 
 The command used is sudo tcpdump port 110 -A. The sudo prefix is required because packet captures require root privileges. The port 110 filter limits captured packets to those exchanged with the POP3 server (POP3 uses port 110 by default). The -A flag displays the contents of captured packets in ASCII format, making cleartext credentials readable in the output.
 
-![Initial_Connection_POP3](initial_connection_pop3.png)
+![Initial_Connection_POP3](../../Images/initial_connection_pop3.png)
 
-![tcpdump_username_capture](tcpdump_username_capture.png)
+![tcpdump_username_capture](../../Images/tcpdump_username_capture.png)
 
-![tcpdump_pass_capture](tcpdump_pass_capture.png)
+![tcpdump_pass_capture](../../Images/tcpdump_pass_capture.png)
 
 In the terminal output above, unimportant packets have been removed for clarity. The username and password were sent in separate packets. The first packet explicitly displays USER frank, while the last packet reveals the password PASS D2xc9CgD.
 
 Wireshark can achieve the same results. In the Wireshark window below, the filter field contains pop. With only POP3 traffic displayed, the captured username and password are visible.
 
-![Wireshark_Username&Password_Capture](Wireshark_Username&Password_capture.png)
+![Wireshark_Username&Password_Capture](../../Images/.wireshark_username&password_capture.png)
 
 Usefull tcpdump filters
 
@@ -522,7 +522,7 @@ Additional mitigations include:
 
 A Man-in-the-Middle (MITM) attack occurs when a victim (A) believes they are communicating with a legitimate destination (B) but is unknowingly communicating with an attacker (E). In the figure below, A requests the transfer of $20 to M. However, E alters this message and replaces the original value with a new one. B receives the modified message and acts on it
 
-![Man-in-the-MiddleAttack](Man_in_the_Middle_attack.png)
+![Man-in-the-MiddleAttack](../../Images/man_in_the_middle_attack.png)
 
 This attack is relatively simple to carry out if the two parties do not confirm the authenticity and integrity of each message. In some cases, the chosen protocol does not provide secure authentication or integrity checking. Some protocols have inherent insecurities that make them susceptible to this kind of attack.
 
@@ -609,7 +609,7 @@ The common protocols covered so far send data in cleartext, making it possible f
 
 **Location of TLS Fits in the Network Model:**
 
-![TLS_FITS_in_Network_Model](SSL_Layer_location_in_OSI_Model.png)
+![TLS_FITS_in_Network_Model](../../Images/ssl_layer_location_in_osi_model.png)
 
 It is worth noting that the OSI model is a conceptual simplification. In practice, TLS operates between the transport and application layers rather than mapping neatly to a single OSI layer. However, the diagram is useful for understanding that encryption sits below the application protocol, wrapping its data before transmission.
 
@@ -652,7 +652,7 @@ HTTPS requires an additional step to encrypt the traffic. The new step takes pla
 
 To establish a TLS connection, the client needs to perform a handshake with the server. The handshake differs between TLS versions. Here is a simplified overview of the TLS 1.2 handshake:
 
-![SSL_HandShake](SSL_Handshake.png)
+![SSL_HandShake](../../Images/ssl_handshake.png)
 
 1. ClientHello: The client sends a message indicating its capabilities, including supported TLS versions, cipher suites, and a random value.
 2. ServerHello: The server responds with the selected connection parameters, its certificate (a digital file signed by a Certificate Authority to prove the server's identity), and its own random value.
@@ -840,9 +840,9 @@ Questions:
 Use SSH to connect to MACHINE_IP as mark with the password XBtc49AB. Using uname -r, find the Kernel release? --> 5.15.0-119-generic (take ssh session and run the command uname -a)
 Use SSH to download the file book.txt from the remote system. How many KBs did scp display as download size? 415 KB (SCP SYNTAX - scp source target)
 
-![SCP_CONNECTION](SCP_SSH_ANSWER.png)
+![SCP_CONNECTION](../../Images/scp_ssh_answer.png)
 
-![SCP_ANSWER](SCP_ANSWER.png)
+![SCP_ANSWER](../../Images/scp_answer.png)
 
 
 **Password Spray**
