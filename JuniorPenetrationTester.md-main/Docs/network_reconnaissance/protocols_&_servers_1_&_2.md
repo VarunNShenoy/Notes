@@ -318,7 +318,7 @@ Questions:
 
 1. Connect to the VM (10.66.149.42) at the POP3 port. Authenticate using the username frank and password D2xc9CgD. What is the response you get to STAT? --> +OK 0 0
 
-![POP3 Answeres](POP3_Answers.png)
+![POP3 Answeres](../Images/pop3_answers.png)
 
 3. How many email messages are available to download via POP3 on 10.66.149.42? --> 0
 
