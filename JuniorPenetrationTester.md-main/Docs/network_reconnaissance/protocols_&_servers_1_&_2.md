@@ -428,7 +428,7 @@ From a security perspective, you always need to think about what you aim to prot
 
 Knowing that you are protecting Confidentiality, Integrity, and Availability (CIA), an attack aims to cause Disclosure, Alteration, and Destruction (DAD). The figure below reflects this relationship.
 
-![Relationship](,,/,,/Images/cia_dad.png)
+![Relationship](../../Images/cia_dad.png)
 
 These attacks directly affect the security of the system. Network packet capture violates confidentiality and leads to the disclosure of information. A successful password attack can also lead to disclosure. A Man-in-the-Middle (MITM) attack breaks the system's integrity as it can alter the communicated data. This room focuses on these three attacks because they are integral to protocol design and server implementation.
 
