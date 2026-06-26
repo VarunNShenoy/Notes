@@ -1,10 +1,10 @@
 Nmap, short for Network Mapper, is free, open-source software released under the GPL license, created by Gordon Lyon (Fyodor), a network security expert and open-source programmer. Nmap is an industry-standard tool for mapping networks, identifying live hosts, and discovering running services. Nmap’s scripting engine can further extend its functionality, from fingerprinting services to exploiting vulnerabilities. A Nmap scan usually goes through the steps shown in the figure below, although many are optional and depend on the command-line arguments you provide.
 
-![NMAP_SCAN](nmap_steps.png)
+![NMAP_SCAN](../../Images/nmap_steps.png)
 
 **Subnetworks**
 
-![subnetworks](NMAP_SUBNETWORKS.png)
+![subnetworks](../../Images/nmap_subnetworks.png)
 
 The figure above shows two types of subnets:
 
@@ -25,7 +25,7 @@ Questions:
 
 A port is usually linked to a service using that specific port number. For instance, an HTTP server would bind to TCP port 80 by default; if it supports SSL/TLS, it would also listen on TCP port 443. (TCP ports 80 and 443 are the default ports for HTTP and HTTPS; however, the web server administrator might choose other port numbers if necessary.) Furthermore, no more than one service can listen on any TCP or UDP port (on the same IP address).
 
-![Understanding_Network_Ports](Open-Closed_ports.png)
+![Understanding_Network_Ports](../../Images/open_closed_ports.png)
 
 Ports can be classified into: 
 
@@ -54,7 +54,7 @@ Nmap supports different types of TCP Port Scans.
 
 TCP Header Review
 
-![TCP_Header](TCP_Header.png)
+![TCP_Header](../../Images/tcp_header.png)
 
 TCP Flags are captured in red in the below image:
 
@@ -77,13 +77,13 @@ TCP connect scan works by completing the TCP 3-way handshake. In standard TCP co
 
 We are interested in learning whether the TCP port is open, not in establishing a TCP connection. Hence, the connection is torn as soon as its state is confirmed by sending a RST/ACK. You can choose to run a TCP connect scan using -sT.
 
-![NMAP TCP SCAN](NMAP_TCP_SCAN.png)
+![NMAP TCP SCAN](../../Images/nmap_tcp_scan.png)
 
 It is important to note that if you are not a privileged user (root or sudoer), a TCP connect scan is the only possible option to discover open TCP ports.
 
 In the following Wireshark packet capture window, we see Nmap sending TCP packets with the SYN flag set to various ports, 5900, 22, 80, and so on. By default, Nmap will attempt to connect to the 1000 most common ports. A closed TCP port responds to a SYN packet with RST/ACK to indicate that it is not open. This pattern will repeat for all the closed ports as we attempt to initiate a TCP 3-way handshake with them.
 
-![NMAP_WIRESHARK_RESULTS](NMAP_WIRESHARK_RESULTS.png)
+![NMAP_WIRESHARK_RESULTS](../../Images/nmap_wireshark_results.png)
 
 We notice that port 80 is open, so it replied with a SYN/ACK, and Nmap completed the 3-way handshake by sending an ACK. The figure below shows all the packets exchanged between our Nmap host and the target system’s port 80. The first three packets are the TCP 3-way handshake. Then the fourth packet tears it down with an RST/ACK.
 
@@ -92,15 +92,15 @@ Questions:
 What is the state of the FTP service running on port 21? --> Open
 What is Nmap’s guess about the service running on port 53? --> domain
 
-![Scan_results](Scan_results_nmap.png)
+![Scan_results](../../Images/scan_results_nmap.png)
 
 **TCP SYN Scan**
 
 Unprivileged users are limited to the connect scan. However, the default scan mode is a SYN scan, and it requires a privileged (root or sudo) user to run. SYN scan does not need to complete the TCP 3-way handshake; instead, it tears down the connection after receiving a response from the server. Because we didn’t establish a TCP connection, the scan is less likely to be logged. We can select this scan type by using the -sS option. The figure below shows how the TCP SYN scan works without completing the TCP 3-way handshake.
 
-![TCP_CONNECT_SCAN](TCP_Connect_Scan.png)
+![TCP_CONNECT_SCAN](../../Images/tcp_connect_scan.png)
 
-![TCP_SYN_SCAN](TCP_SYNC_SCAN.png)
+![TCP_SYN_SCAN](../../Images/tcp_sync_scan.png)
 
 To better see the difference between the two scans, consider the following screenshot. In the upper half of the following figure, we can see TCP connect scan -sT traffic. Any open TCP port will require Nmap to complete the TCP 3-way handshake before closing the connection. In the lower half of the following figure, we see how a SYN scan -sS does not need to complete the TCP 3-way handshake; instead, Nmap sends an RST packet once a SYN/ACK packet is received.
 
