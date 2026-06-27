@@ -45,10 +45,29 @@ Viewing the page source can often give us clues into whether a framework is in u
 
 **Questions**
 
-1. What is the flag from the HTML comment? --> THM{HTML_COMMENTS_ARE_DANGEROUS}
-2. What is the flag from the secret link? --> THM{NOT_A_SECRET_ANYMORE}
+1. What is the flag from the HTML comment? --> THM{HTML_COMMENTS_ARE_DANGEROUS} --> Check the comments in the source code, visit the directory to get the flag. That is http://Machine-IP/new-home-beta.
+2. What is the flag from the secret link? --> THM{NOT_A_SECRET_ANYMORE} --> Search for secr in the source code and visit the secret site to get the flag
 3. What is the directory listing flag? --> THM{INVALID_DIRECTORY_PERMISSIONS}
    ![Directory Listing Flag](../../Images/directory_listing_flag.png)
+4. What is the framework flag? --> go to the source code --> End of the source code you will find framework url. In the framework page go to change log , which says V1.2 had an issue where our backup process was creating a file in the web directory called /tmp.zip which potentially could of been read by website visitors. This file is now stored in an area that is unreadable by the public. No use this vulnerabiltiy to be exploited. visit http://Machine_ip/tmp.zip. Zip file gets downloaded and extract the file to get the flag. --> THM{KEEP_YOUR_SOFTWARE_UPDATED}
+   ![Framework FLag](../../Images/framework_flag.png)
+
+
+**Developer Tools - Inspector**
+
+Every modern browser includes developer tools; this is a toolkit used to aid web developers in debugging web applications and gives you a peek under the hood of a website to see what is going on. As pentesters, we can leverage these tools to gain a much better understanding of the web application. We're specifically focusing on three features of the developer toolkit: Inspector, Debugger and Network.
+
+**Inspector:**
+
+The page source doesn't always reflect what's shown on a webpage; CSS, JavaScript, and user interaction can change the page's content and style, so we need a way to view what's been displayed in the browser window at this exact time. The Inspector tab provides a live view of what is currently on the website. In addition to viewing this live view, we can also edit and interact with page elements, which is helpful for web developers to debug issues.
+
+On the Acme IT Support website, click into the News section, where you'll see three news articles. The first two articles are readable, but the third is blocked by a floating notice above the content stating that you need a premium subscription to view it. These floating boxes that block page content are often called paywalls, as they put up a metaphorical wall in front of the content you want to see until you pay.
+
+
+
+
+
+
 
 
 
