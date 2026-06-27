@@ -22,3 +22,37 @@ Below mentioned is the site review for the Acne IT Support website:
 | Customer Logout         | `/customers/logout`     | This link logs the user out of the customer area.                                                                                                             |
 
 
+**Questions:**
+
+1. What is the endpoint for creating new tickets? --> /customers/ticket/new
+
+
+**Viewing the page source:**
+
+Most browsers also support putting view-source in front of the URL, for example, view-source:https://www.google.com/.
+
+To view the source of the page, right click and select View Page Source from the menu:
+
+Some of the important parts of page source are as follows:
+
+1. At the top of the page --> you will notices some code starting with <!-- and ending with -->, these are comments. Comments are messages left by the website developer, usually to explain something in the code to other programmers or even notes/reminders for themselves.
+2. Links to different pages in HTML are written in anchor tags (these are HTML elements that start with <a), and the link that you'll be directed to is stored in the href attribute.
+3. In some of the website --> the page source has a tag called secr that is used to hide hidden link.
+4. External files such as CSS, Java Script and images can be concluded using the HTML code. In this example, you will notice that these fiels area stored in the same directory. If you view this directory in your web browser, you should see a configuration error: either a blank page or a 403 Forbidden page with an error stating you don't have access to the directory. Instead, the directory listing feature has been enabled, which actually lists every file in the directory. Sometimes this isn't an issue, and all the files in the directory are safe for public viewing, but in some cases, backup files, source code, or other confidential information could be stored here.
+5. Many websites these days aren't built from scratch; they use a framework. A framework is a collection of pre-made code that makes it easy for developers to include common features a website would require, such as blogs, user management, form processing, and more, saving developers hours or days of development time.
+
+Viewing the page source can often give us clues into whether a framework is in use and, if so, which framework and even what version. Knowing the framework and version can be a powerful find, as there may be public vulnerabilities in the framework, and the website might not be using the most up-to-date version. At the bottom of the page, you'll find a comment about the framework and its version in use, along with a link to the framework's website. Viewing the framework's website, you'll see that our website is, in fact, out of date.
+
+**Questions**
+
+1. What is the flag from the HTML comment? --> THM{HTML_COMMENTS_ARE_DANGEROUS}
+2. What is the flag from the secret link? --> THM{NOT_A_SECRET_ANYMORE}
+3. What is the directory listing flag? --> THM{INVALID_DIRECTORY_PERMISSIONS}
+   ![Directory Listing Flag](../../Images/directory_listing_flag.png)
+
+
+
+
+
+
+
