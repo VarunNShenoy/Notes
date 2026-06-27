@@ -116,17 +116,17 @@ UDP is a connectionless protocol; hence, it does not require a handshake for con
 
 The following figure shows that if we send a UDP packet to an open UDP port, we cannot expect a reply. Therefore, sending a UDP packet to an open port won’t tell us anything.
 
-![UDP_SCAN_REQUEST](UDP_Scan.png)
+![UDP_SCAN_REQUEST](../../Images/udp_scan.png)
 
-![UDP_Scan_Response](UDP_NMAP_ICMP_REPLY.png)
+![UDP_Scan_Response](../../Images/udp_nmap_icmp_reply.png)
 
 However, as shown in the figure above, we expect to receive an ICMP type 3, code 3, destination unreachable, port unreachable message. In other words, the UDP ports that don’t generate any response are the ones that Nmap will state as open.
 
 In the Wireshark capture below, we can see that every closed port generates an ICMP destination unreachable (port unreachable) message.
 
-![UDP_WireShark_Results](UDP_WIRESHARK_RESULTS.png)
+![UDP_WireShark_Results](../../Images/udp_wireshark_results.png)
 
-![UDP_wireshark_results](UDP_Scan_results.png)
+![UDP_wireshark_results](../../Images/udp_scan_results.png)
 
 **Questions:**
 
@@ -231,11 +231,11 @@ The null scan does not set any flag, all six flag bits are set to zero. This sca
 
 Therefore, from Nmap’s perspective, a lack of reply in a null scan indicates that either the port is open or a firewall is blocking the packet.
 
-![NMAP_NULL_SCAN](NULL_NMAP_SCAN.png)
+![NMAP_NULL_SCAN](../../Images/null_nmap_scan.png)
 
 However, we expect the target server to respond with an RST packet if the port is closed. Consequently, we can use the lack of RST response to determine which ports are not closed: open or filtered.
 
-![NULL_Scan_Results](Null_scan_results.png)
+![NULL_Scan_Results](../../Images/null_scan_results.png)
 
 A Null Scan (-sN) in Nmap is a type of stealth TCP scan that sends packets with no flags set. It’s used in very specific scenarios where you want to probe systems quietly and potentially bypass simple filtering rules.
 
@@ -243,11 +243,11 @@ A Null Scan (-sN) in Nmap is a type of stealth TCP scan that sends packets with 
 
 The FIN scan sends a TCP packet with the FIN flag set. You can choose this scan type using the -sF option. Similarly, no response will be sent if the TCP port is open. Again, Nmap cannot be sure whether the port is open or whether a firewall is blocking traffic on this TCP port.
 
-![FIN_Scan](FIN_Scan.png)
+![FIN_Scan](../../Images/fin_scan.png)
 
 However, the target system should respond with an RST if the port is closed. Consequently, we will be able to identify which ports are closed and use this knowledge to infer which are open or filtered. It's worth noting that some firewalls will 'silently' drop the traffic without sending an RST.
 
-![FIN_Scan_Results](FIN_Nmap_scan_results.png)
+![FIN_Scan_Results](../../Images/fin_nmap_scan_results.png)
 
 **Xmas Scan**
 
@@ -257,9 +257,9 @@ As with the Null and FIN scans, receiving an RST packet indicates that the port 
 
 The following two figures show the cases when the TCP port is open and when it is closed.
 
-![XMAS_SCAN](Xmas_Scan.png)
+![XMAS_SCAN](../../Images/xmas_scan.png)
 
-![XMAS_SCAN_RESULTS](XMAS_SCAN_Results.png)
+![XMAS_SCAN_RESULTS](../../Images/xmas_scan_results.png)
 
 **Questions:**
 
@@ -275,9 +275,9 @@ Uriel Maimon first described this scan in 1996. In this scan, the FIN and ACK bi
 
 Most target systems respond with an RST packet regardless of whether the TCP port is open. In such a case, we won’t be able to discover the open ports. The figure below shows the expected behaviour for both open and closed TCP ports.
 
-![TCP_Maimon_Scan](TCP_Maimon_Scan.png)
+![TCP_Maimon_Scan](../../Images/tcp_maimon_scan.png)
 
-![TCP_Maimon_Scan_Results](NMAP_TCP_Maimon_Scan.png)
+![TCP_Maimon_Scan_Results](../../Images/nmap_tcp_maimon_scan.png)
 
 **Questions:**
 
@@ -289,9 +289,9 @@ In the Maimon scan, how many flags are set? --> 2
 
 Let’s start with the TCP ACK scan. As the name implies, an ACK scan will send a TCP packet with the ACK flag set. Use the -sA  option to choose this scan. As shown in the figure below, the target would respond to the ACK with RST regardless of the port's state. This behaviour occurs because a TCP packet with the ACK flag set should be sent only in response to a received TCP packet to acknowledge receipt of data, unlike in our case. Hence, this scan won’t tell us whether the target port is open in a simple setup.
 
-![TCP_ACK_SCAN](TCP_ACK_SCAN.png)
+![TCP_ACK_SCAN](../../Images/tcp_ack_scan.png)
 
-![TCP_ACK_SCAN_RESULTS](TCP_ACK_SCAN_RESULTS.png)
+![TCP_ACK_SCAN_RESULTS](../../Images/tcp_ack_scan_results.png)
 
 This kind of scan would be helpful if a firewall were in front of the target. Consequently, based on which ACK packets resulted in responses, you will learn which ports were not blocked by the firewall. In other words, this type of scan is better suited to discovering firewall rule sets and configurations.
 
@@ -299,19 +299,19 @@ Visit the URL http://10.66.154.204:5000 to activate the firewall, and we will re
 
 This time, we received some interesting results. As shown in the console output below, the firewall is blocking all other ports except these five.
 
-![TCP_ACK_SCAN_WITH_FIREWALL](TCP_ACK_SCAN_WITH_FIREWALL.png)
+![TCP_ACK_SCAN_WITH_FIREWALL](../../Images/tcp_ack_scan_with_firewall.png)
 
 **Windows Scan**
 
 Another similar scan is the TCP window scan. The TCP window scan is almost identical to the ACK scan; however, it examines the TCP Window field of the RST packets returned. On specific systems, this can reveal that the port is open. You can select this scan type with the option -sW. As shown in the figure below, we expect to get an RST packet in reply to our “uninvited” ACK packets, regardless of whether the port is open or closed.
 
-![Windows_Scan](Windows_Scan.png)
+![Windows_Scan](../../Images/windows_scan.png)
 
 Similarly, launching a TCP window scan against a Linux system without a firewall will not yield much information.
 
 However, as you would expect, if we repeat our TCP window scan against a server behind a firewall, we expect to get more satisfying results. In the console output shown below, the TCP window scan identified five ports as closed. (This is in contrast with the ACK scan, which labelled the same five ports as unfiltered.) Although we know that these five ports are not closed, we realise they responded differently, indicating that the firewall does not block them.
 
-![Windows_NMAP_SCAN_FIREWALL](Windows_Scan_Firewall_results.png)
+![Windows_NMAP_SCAN_FIREWALL](../../Images/windows_scan_firewall_results.png)
 
 **Custom Scan**
 
@@ -417,7 +417,7 @@ You might consider adding --reason if you want Nmap to provide more details rega
 
 Providing the --reason flag gives us the explicit reason why Nmap concluded that the system is up or a particular port is open. In the console output above, we can see that this system is considered online because Nmap “received arp-response.” On the other hand, we know the SSH port is open because Nmap received a “syn-ack” packet.
 
-![Reason_flag](Reason_flag.png)
+![Reason_flag](../../Images/reason_flag.png)
 
 For more detailed output, you can consider using -v for verbose output or -vv for even more verbosity.
 
@@ -599,84 +599,3 @@ A fourth format is script kiddie. You can see that this format is useless if you
 | -oG                      | Save output in a grepable format                    |
 | -oX                      | Save output in XML format                           |
 | -oA                      | Save output in normal, XML and Grepable formats     |
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   
-
-
