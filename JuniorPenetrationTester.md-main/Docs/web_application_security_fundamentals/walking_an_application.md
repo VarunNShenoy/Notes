@@ -63,6 +63,32 @@ The page source doesn't always reflect what's shown on a webpage; CSS, JavaScrip
 
 On the Acme IT Support website, click into the News section, where you'll see three news articles. The first two articles are readable, but the third is blocked by a floating notice above the content stating that you need a premium subscription to view it. These floating boxes that block page content are often called paywalls, as they put up a metaphorical wall in front of the content you want to see until you pay.
 
+Right-click the premium notice (paywall), then select Inspect from the menu to open the developer tools at the bottom or right-hand side, depending on your browser or preferences.
+
+In the Inspector tab, you'll now see the elements/HTML that make up the website.
+
+Locate the DIV element with the class premium-customer-blocker, and then click on it. You'll see all the CSS styles in the styles box that apply to this element, such as margin-top: 60px and text-align: center. The style we're interested in is the display: block. If you click on the word block, you can type a value of your own choice. Try typing none, and this will make the box disappear, revealing the content underneath it and a flag. If the element didn't have a display field, you could click the bottom of the last style and add your own. 
+
+**Questions:**
+
+1. What is the flag behind the paywall? --> Change the value shown below into none to remove the paywall and get the flag. --> THM{NOT_SO_HIDDEN}
+   ![Paywall Answers](../../Images/paywall_answers.png)
+
+
+**Developer Tools - Debugger**
+
+This panel in the developer tools is intended for debugging JavaScript, and again is an excellent feature for web developers wanting to work out why something might not be working. But as penetration testers, we can dig deep into the JavaScript code. In Firefox and Safari, this feature is called Debugger, but in Google Chrome, it's called Sources.
+
+
+
+
+   
+
+
+
+
+
+
 
 
 
