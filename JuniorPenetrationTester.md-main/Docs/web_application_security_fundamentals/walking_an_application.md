@@ -79,6 +79,73 @@ Locate the DIV element with the class premium-customer-blocker, and then click o
 
 This panel in the developer tools is intended for debugging JavaScript, and again is an excellent feature for web developers wanting to work out why something might not be working. But as penetration testers, we can dig deep into the JavaScript code. In Firefox and Safari, this feature is called Debugger, but in Google Chrome, it's called Sources.
 
+Now in the tryhackme lab --> lets use the debuuger feature.
+
+On the Acme IT, click on the contact page. Each time the page loads, you might notice a rapid flash on the screen, we can use the debuugger tab or the sources to discover flashing page and find the flag.
+
+In the Debugger tab, on the left-hand side, you see a list of all the resources the current webpage is using. If you click into the assets folder, you'll see a file named flash.min.js. Clicking this file displays its contents.
+
+Often when viewing JavaScript files, you'll notice that everything is on one line because they've been minimised, meaning all formatting (tabs, spacing, and newlines) has been removed to make the file smaller. This file is no exception; it has also been obfuscated, making it purposely difficult to read and harder for other developers to copy.
+
+We can return some of the formatting by using the Pretty Print option, which looks like two braces { } to make it a little more readable, though due to the obfuscation, it's still difficult to comprehend what is going on in the file. If you scroll to the bottom of the flash.min.js file, you'll see the line: flash['remove']();.
+
+This little bit of JavaScript is what is removing the red pop-up from the page. We can utilise another feature of the Debugger called breakpoints. These are code points we can use to force the browser to stop processing JavaScript and pause the current execution.
+
+If you click line 110 that contains the code above, you'll notice it turns blue.
+
+Questions:
+
+What is the flag in the red box? --> THM{Catch_me_if_you_can}
+![Debugger_Answer](../../Images/debugger_results.png)
+
+**Developer Tools - Network**
+
+This tab can be used to track every external request a webpage makes. If  If you click on the Network tab and refresh the page, you'll see all the files the page requests. 
+
+you can use the trash icon if you want clear all the requests and start fresh.
+
+With the Network tab open, try filling in the contact form and pressing the Send Message button. You'll notice an event in the Network tab; this is the form being submitted in the background via AJAX. AJAX is a method for sending and receiving network data in a web application in the background without interfering with the current web page.
+
+Once you examine the request, you will be able to see the request headers, cookie details and HTML response that would help you further help in enumeration and exploitation. Examine the new entry on the Network tab created by the contact form, and view the page the data was sent to reveal a flag.
+
+**Questions**
+
+What is the flag under the Response tab on the contact-msg network request? --> THM{GOT_AJAX_FLAG}
+![networkflag](../../Images/networktab-answers.png)
+
+**Storage Tab**
+
+The Storage tab in developer tools lets us view and manage data that a website stores in our browser. This data is stored on the client side and may contain sensitive or interesting information useful during a manual pentest. As pentesters, checking browser storage helps us understand how the application handles authentication, session data, user preferences, and other stored values. 
+
+The Storage tab has the following important options:
+
+1. Local Storage: Stores data persistently in the browser, even after the browser is closed.
+2. Session Storage: Stores data temporarily for a single browser tab/session.
+3. Cookies: Small pieces of data sent by the server and stored in the browser, often used for sessions and authentication.
+4. Cache Storage: Stores cached resources like images, scripts, and API responses for faster loading
+
+Among storage options, cookies are among the most important for a pentester. If you navigate to the Cookies section, you’ll see the data stored on the client side by the website.
+
+This often includes session identifiers, user preferences, and sometimes authentication-related tokens. Cookies also have important security flags. The HttpOnly flag prevents JavaScript from accessing the cookie, helping protect against XSS attacks. The Secure flag ensures the cookie is only sent over HTTPS, and the SameSite attribute helps mitigate CSRF attacks. Carefully reviewing cookies can reveal how the application manages sessions and whether any security best practices are missing.
+
+**Questions:**
+
+What is the value of the HttpOnly flag after logging in? --> false
+
+Create an account in the customers session, after creating open the debugger and anvigate to storage,. go check cookies and in the data check for the httpOnly flag whose value is false as shown below.
+
+![Storage Tab Answers](../../Images/storagetab_answers.png)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
