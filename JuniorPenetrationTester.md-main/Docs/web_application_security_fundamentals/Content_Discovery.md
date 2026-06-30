@@ -83,6 +83,17 @@ Common naming patterns include {company}-assets, {company}-backup, {company}-www
 1. What is the website address for the Wayback Machine? --> https://web.archive.org/
 2. What URL format do Amazon S3 buckets end in? (Answer starts with a .)  --> .s3.awazonaws.com
 
+**Automated Discovery - Gobuster Fundamnetals**
+
+Manual and OSINT techniques can only take you so far. Automated discovery uses tools to rapidly send hundreds or thousands of requests to a web server to check whether directories, files, or other resources exist. This process relies on wordlists, text files containing commonly used directory names, file names, and paths.
+
+**Gobuster**
+
+Gobuster(opens in new tab) is an open-source enumeration tool written in Go. It supports multiple modes: directory/file enumeration (dir), DNS subdomain enumeration (dns), and virtual host enumeration (vhost). It's pre-installed on the AttackBox and included by default in Kali Linux.
+
+
+
+
 
 
 
