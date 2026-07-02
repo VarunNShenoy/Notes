@@ -25,7 +25,7 @@ Run the following command against the Acme IT Support web server. The -v flag en
 
 curl http://10.66.180.84 -v
 
-![HTTP HEADERS](HTTP_Headers.png)
+![HTTP HEADERS](../../Images/HTTP_Headers.png)
 
 **Framework Stack**
 
