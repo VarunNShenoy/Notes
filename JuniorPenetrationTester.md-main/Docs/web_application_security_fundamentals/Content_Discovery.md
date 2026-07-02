@@ -91,6 +91,126 @@ Manual and OSINT techniques can only take you so far. Automated discovery uses t
 
 Gobuster(opens in new tab) is an open-source enumeration tool written in Go. It supports multiple modes: directory/file enumeration (dir), DNS subdomain enumeration (dns), and virtual host enumeration (vhost). It's pre-installed on the AttackBox and included by default in Kali Linux.
 
+| Flag | Description |
+|------|-------------|
+| `-t`, `--threads` | Number of concurrent threads (default: 10). Increase for faster scans. |
+| `-w`, `--wordlist` | Path to the wordlist file. Required for all modes. |
+| `-o`, `--output` | Write results to a file instead of stdout. |
+| `--delay` | Wait time between requests; useful against rate-limited servers. |
+
+**Wordlists**
+
+SecLists is the mostly widely used collection and the path is /usr/share/wordlists/SecLists/. For Directory Enumeration, Discovery/Web-Content/common.txt and Discovery/Web-Content/directory-list-2.3-medium.txt cover most scenarios.
+
+dir mode: The dir mode brute forces directories and files on a web server. The basic Syntax is 
+
+gobuster dir -u "http://Machine_IP" -w /path/to/wordlists
+
+The -u flag specifies the target URL that Gobuster will run its discovery against. The -w flag specifies the wordlist fil; a list of directory and file names Gobuster will try against the target one by one. Both -u and -w is required for gobuster to run.
+
+Some additional useful flags for dir mode:
+
+| Flag | Description |
+|------|-------------|
+| `-x`, `--extensions` | File extensions to search for (e.g., `.php`, `.txt`, `.js`). |
+| `-r`, `--followredirect` | Follow HTTP redirects. |
+| `-k`, `--no-tls-validation` | Skip TLS certificate verification (useful in lab environments). |
+| `-s`, `--status-codes` | Only show specific status codes (e.g., `200`, `301`). |
+
+
+**Questions**:
+
+1. What is the name of the directory beginning with /mo that was discovered?--> /monthly, run the gobuster scan is dir mode - will be able to get the results.
+2. What is the name of the log file that was discovered? --> development.log
+
+
+**Automated Discovery - subdomains & virtual hosts:**
+
+This is about DNS mode and vhost mode. The dns mode allows gobuster to bruteforce subdomains.During a penetration test,  checking the subdomains of your target’s top domain is essential. Just because something is patched in the regular domain, it doesn't mean it is also patched in the subdomain. An opportunity to exploit a vulnerability in one of these subdomains may exist.
+
+For example, if TryHackMe owns tryhackme.thm and mobile.tryhackme.thm, there may be a vulnerability in mobile.tryhackme.thm that is not present in tryhackme.thm. That is why it is important to search for subdomains as well!
+
+Difference between subdomains and VHOSTS:
+
+| Aspect | Subdomain | Virtual Host (VHost) |
+|----------|----------|----------|
+| Definition | A DNS record that points to a domain hierarchy below the main domain. | A web server configuration that serves different content based on the `Host` header. |
+| Example | `blog.example.com`, `admin.example.com` | `dev.example.com` hosted on the same server but only accessible via the correct `Host` header. |
+| Exists in DNS? | Yes, typically requires a DNS record. | Not necessarily. A VHost can exist without a public DNS record. |
+| Discovered By | DNS enumeration, CT logs, OSINT, brute-forcing. | VHost fuzzing using different `Host` headers. |
+| Server Requirement | DNS must resolve the hostname to an IP address. | Web server must be configured to respond to the hostname. |
+| Typical Goal | Identify publicly reachable applications and services. | Identify hidden applications hosted on the same web server. |
+| Example Tool | `subfinder`, `amass`, `assetfinder` | `ffuf`, `gobuster`, `wfuzz` (VHost mode) |
+| Pentesting Question Answered | "What hostnames exist in DNS?" | "What sites does this web server serve for different Host headers?" |
+
+Preparing the tryhackme environment :
+
+We are going to work in a local enviroment with a DNS server on the web server. To ensure we can resolve the domains used through out this room. you need to change the /etc/resolv-dnsmasq file:
+
+/etc/resolv-dnsmasq (or more commonly /etc/resolv.dnsmasq) is a file used by dnsmasq to define the upstream DNS servers that dnsmasq should forward queries to. Instead of reading /etc/resolv.conf, dnsmasq can be configured to use this separate file via the resolv-file option.
+
+1. Open the file and insert nameserver 10.67.161.235 as the first line
+2. Save the file
+3. Restarth the DNSMASQ service by running the command /etc/init.d/dnsmasq restart.
+
+Updating the Host file:
+
+To ensure the domain used in this room resolves correctly, we need to map the target IP using the /etc/hosts file
+
+1. Open the file and add 10.67.161.235 example.thm
+2. Save the file and ping it to the example.thm.
+
+Explaining the preparing the environment concept
+
+Editing the /etc/resolv-dnsmasq and adding nameserver 10.67.161.235 --> dnsmasq is a local DNS forwarder/cache. When your machine needs to resolve a hostname (e.g., admin.example.thm), dnsmasq asks an upstream DNS server. By adding nameserver - "Use the lab's DNS server at 10.67.161.235 to resolve domain names."
+
+Editing the /etc/hosts --> you are maping an IP Address to an domain.
+
+**DNS Mode:**
+
+The dns mode performs DNS lookups using wordlists as subdomain candidates. The required flags -d (domain) and -w (wordlists):
+
+The dns mode performs DNS lookups using wordlist entries as subdomain candidates. The required flags are -d (domain) and -w (wordlist). The --wildcard option in Gobuster is used to force enumeration even when wildcard DNS is detected, allowing results to be returned despite potential false positives.
+
+Run the command:  gobuster dns -d example.thm -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-5000.txt --wildcard
+
+Some useful flags are as follows
+
+| Flag | Description |
+|------|-------------|
+| `-d`, `--domain` | The target domain to enumerate |
+| `-i`, `--show-ips` | Show the IP addresses that subdomains resolve to |
+| `-r`, `--resolver` | Use a custom DNS server for lookups |
+
+vhost Mode: 
+
+The vhost mode doesn't use DNS. Instead, it sends HTTP requests to the target IP, cycling through wordlist entries as the Host: header value. This finds virtual hosts that aren't registered in public DNS.
+
+Run the vhost scan with the following commands. The --append-domain flag tells Gobuster to combine each wordlist entry with the domain, and --exclude-length filters out false positives that share a common response size:
+
+The vhost mode doesn't use DNS. Instead, it sends HTTP requests to the target IP, cycling through wordlist entries as the Host: header value. This finds virtual hosts that aren't registered in public DNS.
+
+gobuster vhost -u "http://10.67.161.235" --domain example.thm -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain --exclude-length 250-320
+
+Review the results and identify the virtual hosts responding with a 200 OK status. Access each one in your browser to explore what's hosted there.
+
+**Questions:**
+
+1. Apart from dns and -w, which shorthand flag is required for dns mode? --> -d
+2. How many virtual hosts on acmeitsupport.thm respond with status code 200? 3
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
