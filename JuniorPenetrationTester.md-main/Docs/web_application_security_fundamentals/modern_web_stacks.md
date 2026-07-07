@@ -95,7 +95,16 @@ Since port 3000 --> we already know this is running port 3000, automatically whe
 
 curl -I http://Machine_IP:3001 --> which gives the following result as shown below:
 
-!{Next.js_Fingerprinting}(../../Images/Fingerprinting _Next.js.png)
+![Next.js_Fingerprinting](../../Images/Fingerprinting _Next.js.png)
+
+| Signal                      | Value                                       | Confidence                  |                                                                                                                                                                                   
+| --------------------------- | ------------------------------------------- | --------------------------- | 
+| X-Powered-By header         | `Next.js`                                   | High                        |
+| HTML source                 | `window.__next_f` present in HTML           | High (App Router indicator) |                                                                   |
+| Static asset paths          | `/_next/static/chunks/`                     | High                        | 
+| Middleware headers          | `x-middleware-rewrite`, `x-middleware-next` | Medium                      |
+| Redirect to protected route | HTTP `307` → `/login`                       | Medium                      | 
+
 
 
 
