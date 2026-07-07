@@ -89,21 +89,62 @@ Express is the Foundation of the MERN Stack we just exploited.Next.js builds on 
 
 Next.js is the dominant React framework for production applications. It is what you will find behind most investor dashboards, customer portals, and marketing sites built in the last three years. On Ubuntu, it runs as a Node.js process under a dedicated user (node or www-data), typically started with npm start after npm run build. The App Router (introduced in Next.js 13, default since 14) enables React Server Components, which make the CVEs CVE-2025-29927(opens in new tab) and CVE-2025-55182(opens in new tab) possible.
 
+React Server components and the flight protocol:
+
+The App Router runs React components directly on the server. Instead of shipping JavaScript to the browser, the server executes the component and streams the result to the client using a binary-like format called the RSC Flight protocol. That streaming channel, the endpoint that serves this payload, is the attack surface for CVE-2025-55182.
+
 **Fingerprinting Next.js**
 
 Since port 3000 --> we already know this is running port 3000, automatically when we start npm run dev --> it automatically assignes to port 3001. So lets run the command.
 
 curl -I http://Machine_IP:3001 --> which gives the following result as shown below:
 
-![Next.js_Fingerprinting](../../Images/Fingerprinting _Next.js.png)
+![Next.js_Fingerprinting](../../Images/Fingerprinting_Next.js.png)
 
 | Signal                      | Value                                       | Confidence                  |                                                                                                                                                                                   
 | --------------------------- | ------------------------------------------- | --------------------------- | 
 | X-Powered-By header         | `Next.js`                                   | High                        |
-| HTML source                 | `window.__next_f` present in HTML           | High (App Router indicator) |                                                                   |
+| HTML source                 | `window.__next_f` present in HTML           | High (App Router indicator) |                                                                 
 | Static asset paths          | `/_next/static/chunks/`                     | High                        | 
 | Middleware headers          | `x-middleware-rewrite`, `x-middleware-next` | Medium                      |
 | Redirect to protected route | HTTP `307` → `/login`                       | Medium                      | 
+
+window.__next_f in the page source is the definitive App Router indicator. It is the hydration array for React Server Component data, injected by Next.js into every App Router page's HTML output. It does not appear in Pages Router or any other framework.
+
+**CVE-2025-29927: Middleware Bypass**
+
+In Next.js, middleware is a function that runs before every request reaches a page. Developers use it as the central gatekeeper; authentication checks, session validation, and redirect logic all live here. Because middleware sits in front of every route, it is the single most common place developers implement access control in Next.js applications.
+
+The /dashboard route in this app is a typical example. The middleware checks for a valid session cookie. Without one, it redirects to /login. Let us confirm that it is working:
+
+Run the command curl -v http://10.64.149.216:3001 - this command has to check, if the middleware is working fine that it needs to redirected to the /login page.
+
+![Middleware_checking](../../Images/Middleware_checking.png)
+
+Now for the vulnerability, Next.js uses an internal headder called x-middleware-subrequest to prevent infinite loops. When middleware calls itself recursively (for example, to forward a modified request to another route), Next.js attaches this header so it knows not to run middleware again on that forwarded request. It is a performance and safety mechanism built into the framework itself. 
+
+The critical flaw: Next.js never checked whether x-middleware-subrequest was coming from an internal process or from an external client. If you include the header in your own request, Next.js treats it the same as an internal subrequest and skips middleware entirely. The authentication check never runs.
+
+The header value encodes the middleware module path, repeated five times. For an app with a root-level middleware.ts file:
+
+Questions: 
+
+1.What HTML artifact in the page source confirms a Next.js App Router application? --> window.__next_f
+2.Send the CVE-2025-29927 bypass header to the protected /dashboard route. What flag is displayed on the page? (Answer Format: THM{...}) --> THM{m1ddl3w4r3_byp4ss3d}
+
+![Flag](../../Images/middleware_flag.png)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
