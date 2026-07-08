@@ -134,6 +134,21 @@ Questions:
 
 ![Flag](../../Images/middleware_flag.png)
 
+**Django:**
+
+The Mern and Next.js stack run with node.js whereas Django is the python-native alternative framework that government agencies, newsrooms, and SaaS companies with Python engineering teams reach for first.
+
+CVE-2021-35042 is a SQL injection vulnerability in Django's order_by() query method, rated CVSS 9.8 Critical and requiring no authentication to exploit.
+
+Stack identity:
+
+Django powers a large share of Python-backed web applications. On Ubuntu, it runs under Gunicorn or Django's built-in development server, typically on port 8000. The Django admin panel at /admin/ and CSRF middleware are enabled by default in virtually every Django project. The admin panel alone is a reliable stack signal before you send a single exploit payload.
+
+Fingerprint Django:
+
+curl -I http://Machine_IP:8000/products
+
+
 
 
 
