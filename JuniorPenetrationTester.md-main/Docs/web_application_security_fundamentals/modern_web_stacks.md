@@ -149,6 +149,81 @@ Fingerprint Django:
 curl -I http://Machine_IP:8000/products
 
 
+-------Need TO fill More Details---DO Later.
+
+Questions
+
+What hidden form field in Django POST forms is a near-certain stack fingerprint? --> csrfmiddlewaretoken
+
+Using manual curl payloads, what is the name of the vulnerable database? --> vuln_db
+
+**LMAP:**
+
+The Four ComponentsThe acronym LAMP represents the four layers of the development 
+environment:
+
+1. Linux: The open-source operating system that serves as the base layer for the entire stack.
+2. Apache: The web server software that processes incoming HTTP client requests and delivers web assets.
+3. MySQL: The relational database management system (RDBMS) used to store and manage application data.
+4. PHP: The backend programming language used to write business logic and generate dynamic web content (sometimes substituted with Perl or Python
+
+LAMP (Linux, Apache, MySQL, PHP) is one of the earliest and most widely adopted web application stacks. It became popular because all its components are open-source, stable, and easy to deploy. Linux provides the operating system, Apache handles web requests, MySQL manages the database, and PHP processes dynamic content.
+
+Stack Identity:
+
+On Ubuntu, Apache usually runs under www-data, serves files from /var/www/html, and passes dynamic requests to PHP through mod_php or PHP-FPM. MySQL stores the application data, while PHP handles server-side logic. This classic Linux, Apache, MySQL, and PHP combination creates common attack surfaces such as exposed PHP files, database errors, weak file permissions, and misconfigured Apache/PHP settings.
+
+Fingerprinting the LAMP Stack 
+
+Start with header check using curl, Apache Advertisies in every response
+
+Run the command : curl -I http://Machine_IP:8000
+
+root@tryhackme:~# curl -I http://10.66.133.74:8080/
+HTTP/1.1 200 OK
+Server: Apache/2.4.49 (Unix)
+Last-Modified: Mon, 11 Jun 2007 18:53:14 GMT
+ETag: "2d-432a5e4a73a80"
+Accept-Ranges: bytes
+Content-Length: 45
+Content-Type: text/html
+
+The Output says this is a Apache/2.4.49 (UNIX Version), To confirm, we can request an non-existent path to confirm.
+
+Run curl -v http://MachineIP:8000/nonexistent --> Even this confirms that the server is running apache/2.4.9. This exact version maps to CVE-2021-41773 and nothing else. Apache also repeats the version in 404 error page footers.
+
+The final signal is /cgi-bin/. A 403 Forbidden means the directory exists, and listing is disabled. mod_cgi is configured. A 404 would mean it is not present at all. For confirming this run curl -v http://machineip:8000/cgi-bin/
+
+Once Done, look for the header : 
+
+## Enumeration Findings
+
+| Signal | Value | Confidence |
+|----------|----------|------------|
+| Server Header | `Apache/2.4.49 (Unix)` | High — Exact CVE match |
+| 404 Error Page Footer | `Apache/2.4.49` version string | High |
+| `/cgi-bin/` Response | `403 Forbidden` (instead of `404 Not Found`) | High — Indicates `mod_cgi` is enabled |
+
+**CVE-2021-41773: The Vulnerability**
+
+Apache 2.4.49 introduced a change to the ap_normalize_path() function. The change inadvertently broke the path traversal filter. Normally, Apache blocks any URL containing ../ before it reaches the filesystem. The bug is in the decode order: the traversal filter runs before full URL decoding.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
