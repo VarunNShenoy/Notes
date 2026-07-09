@@ -255,15 +255,53 @@ Run Nikto against each port in turn: MERN on port 3000, Next.js on port 3001, Dj
 
 No Server: banner; Express does not send one by default. Two signals confirm the stack: x-powered-by: Express and the connect.sid session cookie. The missing httponly flag on the session cookie is a bonus finding.
 
-Port 3001 - Next.js
+**Port 3001 - Next.js**
 
 ![Nikto_Next.js_results](../../Images/Nikto_Next.js_results.png)
 
 x-powered-by: Next.js confirms the framework. The three x-nextjs-* headers confirm that the App Router is in production mode, the condition required for CVE-2025-29927 to apply.
 
-Port 8000 - Django
+**Port 8000 - Django**
 
 WSGIServer/0.2 CPython/3.10.12 is a Django-specific server banner. The combination of referrer-policy: same-origin and x-content-type-options: nosniff together confirm Django's SecurityMiddleware is active.
+
+![Django_Nikto_results](../../Images/Django_Nikto_results.png)
+
+**Port 8080 - Apache**
+
+![Apache_Nikto_Results](../../Images/Apache_Nikto_Results.png)
+
+Server: Apache/2.4.49 (Unix) is a direct CVE-2021-41773 indicator. This is the most valuable finding Nikto produces across all four scans: an exact version number that maps to a known critical exploit.
+
+CVE Summary: 
+
+| Stack              | CVE            | Impact                                     | CVSS         |
+| ------------------ | -------------- | ------------------------------------------ | ------------ |
+| MERN / Express     | CVE-2020-8203  | Prototype pollution → auth bypass          | 7.4 High     |
+| Next.js Middleware | CVE-2025-29927 | Single header → full middleware bypass     | 9.1 Critical |
+| Django ORM         | CVE-2021-35042 | SQL injection via unparameterised ORDER BY | 9.8 Critical |
+| Apache LAMP        | CVE-2021-41773 | Path traversal + mod\_cgi RCE              | 9.8 Critical |
+
+**Web Server Attacks - 1**
+
+Before you start enumerating directories or testing inputs, you need to know what you are dealing with. The web server software itself shapes which misconfigurations are possible, which paths are worth checking, and which tools will be most effective. Identifying the server is not a formality. It directly influences every decision that follows.
+
+**The Server Response Header:**
+
+The most direct fingerprinting signal is the Server header in an HTTP response. When you make any request to a web server, the server includes this header in its reply. Different server software formats it differently, and those formats are consistent enough to use as positive identifiers.
+
+Run curl with the -I flag to request only the headers, not the response body.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
