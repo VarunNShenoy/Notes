@@ -292,6 +292,46 @@ The most direct fingerprinting signal is the Server header in an HTTP response. 
 
 Run curl with the -I flag to request only the headers, not the response body.
 
+![Service_Response_Header](../../Images/Service_Response_Header.png)
+
+The Server header tells you the software and version outright. Not every server exposes this much detail. A hardened deployment might show only Apache or suppress the header entirely, but the default configuration on most Ubuntu servers leaves this information visible.
+
+Here is what each server in this lab returns by default:
+
+| Port | Server             | Default Server Header          |
+| ---- | ------------------ | ------------------------------ |
+| 80   | Apache2            | `Apache/2.4.x (Ubuntu)`        |
+| 8000 | Python HTTP Server | `SimpleHTTP/0.6 Python/3.xx.x` |
+| 3000 | Node.js Express    | None (set by application)      |
+| 8080 | Nginx              | `nginx/1.xx.x`                 |
+
+Notice that the Node.js Express entry shows no Server header. Express does not set one by default; the Node.js HTTP layer beneath it does not either. A developer has to add it explicitly. On a real Express application, the absence of a Server header is itself a signal. The reliable identifier for Express is the X-Powered-By header, which Express sets automatically unless the developer removes it.
+
+The X-Powered-By Header
+
+Some frameworks add an X-Powered-By header that reveals the application layer behind the server. Express sets this by default:
+
+X-Powered-By: Express
+
+This header is separate from Server, and for Express, it is the primary fingerprint. Unlike Apache or Nginx, which announce themselves in the Server header, Express relies on X-Powered-By as its identifier. Check for it on any port where Server is missing or generic.
+
+Browse DevTools: 
+
+If you are working in a browser, the Network tab in DevTools provides the same header information without any additional tools. Open http://10.65.148.35:3000 in Mozilla Firefox, then right-click anywhere on the page and choose Inspect (or press F12) to launch Developer Tools. Navigate to the Network tab and refresh the page to capture the requests. Select the main request from the list, and under the Headers section, view the Response Headers to inspect the server’s response details.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
