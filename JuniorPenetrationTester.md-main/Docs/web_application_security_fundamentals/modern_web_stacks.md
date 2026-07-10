@@ -362,7 +362,7 @@ The Python HTTP server is a realistic finding because it requires no exploitatio
 1. What database password is stored in the .env file served by the Python HTTP Server? --> S3cur3DBPass!
    ![python_http_answers](../../Images/python_http_answers.png)
 2. What is the flag found inside the backup archive served by the Python HTTP Server? --> THM{py_server_exposed}
-   ![http_python_answers_2](http_python_answers_2.png)
+   ![http_python_answers_2](../../Images/http_python_answers_2.png)
 
 
 Apache2: 
@@ -373,9 +373,12 @@ Version Disclosure:
 
 curl -sI http://10.67.162.116:80 | grep -i server 
 
-![Apacher_Server_Version](Apacher_Server_Version.png)
+![Apacher_Server_Version](../../Images/Apacher_Server_Version.png)
 
 Apache on Ubuntu defaults to ServerTokens OS, which includes the OS label alongside the version number. Knowing the exact version helps you check for known CVEs and understand the server's capabilities.
+
+Directory Listing: 
+
 
 
 
