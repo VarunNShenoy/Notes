@@ -319,6 +319,69 @@ Browse DevTools:
 
 If you are working in a browser, the Network tab in DevTools provides the same header information without any additional tools. Open http://10.65.148.35:3000 in Mozilla Firefox, then right-click anywhere on the page and choose Inspect (or press F12) to launch Developer Tools. Navigate to the Network tab and refresh the page to capture the requests. Select the main request from the list, and under the Headers section, view the Response Headers to inspect the server’s response details.
 
+**Questions:**
+
+1. What value does the Server header return for the Python HTTP Server running on port 8000? (Answer Format: SimpleHTTP/X.X Python/X.X.X)
+-->SimpleHTTP/0.6 Python/3.12.3
+2. Which HTTP header reveals the application framework running on port 3000? --> X-Powered-By
+3. What web server software is running on port 8080?--> Ngnix
+
+
+**Python Http Server :**
+
+Python Ships with a built in HTTP Server that any developer can start with a single command.
+
+pyhton3 -m http.server 8000
+
+Developers use it to quickly share files, test static websites, or transfer something between two machines on the same network. The problem is that "quickly share files" sometimes becomes "accidentally exposed to the internet for six months", running on public-facing servers, internal network shares, and cloud instances where someone opened port 8000 in the firewall and forgot about it. The server has no access control, no authentication, and no logging beyond what the OS captures.
+
+**What It Serves**
+
+Pyhton Http Server contains the entire working directory, including every file in it like odt files like .env. There is no .htaaccess equivalent, no blocklist, no configuration file. If the file exist in the directory --> then anyone can reach via port 8000 and downloaod it
+
+**Directory Listing**
+
+When there is no index.html file present in the directory then the Python Http Server generates an HTMl Page listing eery file it can see. We can access it using 
+
+curl -s http://Machine_IP:8000
+
+Accessing .Dot files:
+
+Dotfiles like .env are hidden from normal directory navigation on Linux but python http server does not respect the convention. It serves them like any other file. The .env file is common target becausr developers use it to store environment-specific configuration and that configuration normally includes credentials:
+
+curl -s http://MachineIP:8000/.env
+
+Downloading and Inspecting archives:
+
+curl -s http://Machine_IP:8000/backup.zip -o backup.zip
+
+The Python HTTP server is a realistic finding because it requires no exploitation. There is no vulnerability to trigger. The server is functioning exactly as designed. The misconfiguration is that it is running in a location where it should not be, serving files that should not be public. Documenting this in a real engagement means explaining not just that the server exists, but also what it exposes and what an attacker could do with that information.
+
+**Questions:**
+
+1. What database password is stored in the .env file served by the Python HTTP Server? --> S3cur3DBPass!
+   ![python_http_answers](../../Images/python_http_answers.png)
+2. What is the flag found inside the backup archive served by the Python HTTP Server? --> THM{py_server_exposed}
+   ![http_python_answers_2](http_python_answers_2.png)
+
+
+Apache2: 
+
+Apache is the most widely deployed web server in the world, which means it appears in nearly every engagement that touches web infrastructure. Its default Ubuntu configuration leaves several things enabled that testers regularly find and report. The three most common are directory listing on specific paths, the server-status module, and backup files sitting in the document root.
+
+Version Disclosure:
+
+curl -sI http://10.67.162.116:80 | grep -i server 
+
+![Apacher_Server_Version](Apacher_Server_Version.png)
+
+Apache on Ubuntu defaults to ServerTokens OS, which includes the OS label alongside the version number. Knowing the exact version helps you check for known CVEs and understand the server's capabilities.
+
+
+
+
+
+
 
 
 
