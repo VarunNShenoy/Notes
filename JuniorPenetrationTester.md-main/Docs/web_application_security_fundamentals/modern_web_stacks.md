@@ -424,6 +424,235 @@ Attackers look at Node.js Express applications specifically because developers o
 
 Frame work Fingerprinting
 
+Run curl -sI http://MachineIP:3000
+
+To get headers which tells us that the server is dealing with express.
+
+then run curl -s http://Machine_IP:3000 to get the version of the express running.
+
+Triggering Verbose Errors:
+
+curl -s http://MachineIP:3000/api/users | python3 -m json.tool
+
+Results:
+
+{
+    "error": "connect ECONNREFUSED 127.0.0.1:5432",
+    "stack": "Error: connect ECONNREFUSED 127.0.0.1:5432\n    at /opt/nodeapp/app.js:16:15\n    at Layer.handle [as handle_request] (/opt/nodeapp/node_modules/express/lib/router/layer.js:95:5)\n    at next (/opt/nodeapp/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/opt/nodeapp/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/opt/nodeapp/node_modules/express/lib/router/layer.js:95:5)\n    at /opt/nodeapp/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/opt/nodeapp/node_modules/express/lib/router/index.js:346:12)\n    at next (/opt/nodeapp/node_modules/express/lib/router/index.js:280:10)\n    at expressInit (/opt/nodeapp/node_modules/express/lib/middleware/init.js:40:5)\n    at Layer.handle [as handle_request] (/opt/nodeapp/node_modules/express/lib/router/layer.js:95:5)",
+    "query": "SELECT * FROM users"
+}
+
+The /api/users endpoint returns a 500 Internal Server Error and exposes detailed debugging information, including a stack trace, internal file paths (/opt/nodeapp/app.js), the use of the Express.js framework, and the SQL query (SELECT * FROM users) being executed. The error message ECONNREFUSED 127.0.0.1:5432 indicates that the application is attempting to connect to a PostgreSQL database on the local host, but the connection is failing. This verbose error disclosure provides valuable reconnaissance information about the application's backend technologies and internal structure, which could aid an attacker in identifying potential attack vectors.
+
+Enumerating Routes via Debug Endpoints:
+
+One of the most useful things a misconfigured Express application can do is tell you all of its own routes. Developers sometimes build a debug endpoint that lists every registered route for convenience during development, then forget to remove it before going live.
+
+that can be accessed in this case by running 
+
+curl -s http://MachineIP:3000/api/routes
+[{"method":"GET","path":"/"},{"method":"GET","path":"/api/users"},{"method":"GET","path":"/api/routes"},{"method":"GET","path":"/api/debug/env"}]
+
+if we are lucky You will get endpoints --> before running gobuster.
+
+**Exposed Environment Variables:**
+
+Environment variables in Node.js applications often contain database credentials, API keys, and configuration flags. A debug endpoint that returns process.env is a significant finding.
+
+To get this,
+
+we can run curl -s http://MachineIP:3000/api/debug/env
+
+if the response includes DB_PASSWORD, SECRET_KEY or similar fields,document them. The NODE_ENV value is also telling, NODE_ENV=development on a production server is a siggnal that the application was deployed without proper hardening.
+
+**Static File Serving**
+
+Express application commonly use the express.static() middleware to serve front-end assests like JavaScript files, stylesheets and configuration.  The static files route, if it exists, serves everything in a directory. Client-side JavaScript files sometimes contain API endpoint URLs, internal hostnames, or debug flags embedded as constants.
+
+Once you know the routes from the /api/routes endpoint, check what is being served statically:
+
+run curl -s http://MachineIP:3000/static/config.js
+
+Take a step back and look at what we just did. We started with header inspection to confirm the framework, then triggered an error to see what the application leaks in failure mode, then used a debug endpoint to enumerate routes, then checked for credential exposure in environment variables, and finally followed the route list to the static files where the flag lives. This pattern works because each step narrows the scope for the next one. Headers tell you the framework. Errors tell you the internals. Debug endpoints tell you the routes. Static files tell you what the developers assumed was safe to expose.
+
+**Questions:**
+
+1. What value does the NODE_ENV variable have in the debug endpoint response? --> development
+2. What is the flag found in the static files served by the Node.js application? --> THM{node_debug_exposed}
+
+**Ngnix**
+
+Version Disclosure:
+
+Run curl -sI http://MachineIP:8000 | grep -i server
+
+Nginx includes its version in the Server header by default. Unlike Apache, which uses the ServerTokens directive to control this, Nginx uses server_tokens. The default is on, which exposes the version. Knowing the exact version is useful when checking the Nginx changelog for security fixes or when building an engagement report.
+
+The server_tokens directive controls both the Server header and the version string in default error pages simultaneously; setting server_tokens off suppresses the version from both places at once. If the Server header is suppressed, requesting a non-existent path will confirm whether server_tokens is truly off or just partially configured?
+
+run curl -s http://MachineIP:8000/nonexistent-path
+
+The version showing tells us that the server_token is on.
+
+Directory Listing with Autoindex
+
+Nginx does not enable directory listing by default, When a developer eants to expose a directory listing they add autoindex to a location block in the configure
+
+This is a documented Nginx configuration option and appears in legitimate file-sharing setups. The misconfiguration is using it on a path that contains sensitive files, or leaving it enabled on a production server without access controls.
+
+Browse http://MachineIP:8000/files/
+
+Nginx's autoindex HTML format uses a simple table with filename, last-modified date, and file size. When you find this, read every file listed. Nginx directory listings often appear on paths that developers configured as shared storage and then populated with operational data.
+
+The nginx_status Endpoint:
+
+Nginx's stub_status module exposes real-time connection metrics at a configurable URL. The secure configuration restricts access to localhost only. The misconfigured version allows access from any IP.
+
+To check run curl -s http://MachineIP:8000/nginx_status
+
+The three numbers on the second line are in order: total accepted connections, total handled connections, and total requests since the server started. The third line breaks down currently active connections by state. While this data is not directly exploitable, it leaks operational information about server load and usage patterns. On a real engagement, an exposed /nginx_status endpoint is a finding because it confirms the internal monitoring setup and may indicate other monitoring endpoints are similarly exposed.
+
+Putting it all together:
+
+The Nginx investigation follows a parallel structure to the Apache task. Check the version header, browse any directories with autoindex enabled, and check for the status endpoint. The specific paths and configuration directives differ, but the investigative approach is the same.
+
+Tip: Nginx configuration files live in /etc/nginx/ on Ubuntu. If you ever have shell access to a machine running Nginx, reading the site configuration in /etc/nginx/sites-available/ will show you exactly what directories are exposed and what modules are enabled.
+
+Questions:
+
+1. What Nginx directive enables directory listing in a location block? -->autoindex on
+2. What URL path exposes Nginx connection statistics? --> /nginx_status
+3. What is the flag found in the directory listing on port 8080? run curl -s http://MachineIP:8080/files/ , you will get results containing server-config.txt. Now run curl -s http://machineip:8080/files/server-config.txt -o server-config.txt. Now display the results by running cat server-config.txt --> THM{nginx_autoindex}
+
+**Common Misconfiguration Across Servers :**
+
+**Security Headers:**
+
+Security headers are HTTP response headers that instruct the browser on how to handle the page content. They protect against a range of client-side attacks, including clickjacking, MIME sniffing, and cross-site scripting. None of the servers in this lab has been configured to send these headers, which is the default state for all four server types.
+
+| Header                        | What It Protects Against                                                            | Example Value                    |
+| ----------------------------- | ----------------------------------------------------------------------------------- | -------------------------------- |
+| **X-Frame-Options**           | Clickjacking (prevents the page from being embedded in an iframe on another domain) | `DENY` or `SAMEORIGIN`           |
+| **X-Content-Type-Options**    | MIME sniffing (prevents the browser from guessing content types)                    | `nosniff`                        |
+| **Content-Security-Policy**   | Restricts where scripts, stylesheets, and other resources can load from             | `default-src 'self'`             |
+| **Referrer-Policy**           | Controls what is sent in the `Referer` header when navigating to another page       | `no-referrer` or `strict-origin` |
+| **Strict-Transport-Security** | Forces HTTPS for subsequent requests (only meaningful on HTTPS servers)             | `max-age=31536000`               |
+
+
+run the query 
+
+for port in 80 8000 3000 8080; do echo "=== Port $port ==="; curl -sI http://10.65.177.129:$port/ | grep -iE "x-frame-options|x-content-type|content-security-policy|strict-transport|referrer-policy" || echo "(no security headers found)"; done
+
+Explanation
+
+
+1. for port in 80 8000 3000 8080
+   -->Loop through ports 80, 8000, 3000, 8080
+
+2. echo "=== Port $port ==="
+   --->Display the current port being checked
+
+3. curl -sI http://10.65.177.129:$port/
+   -->curl = send HTTP request
+   --> -s = silent mode
+   --> -I = fetch only response headers
+
+4. | --> Pipe output from curl to grep
+
+5. grep -iE
+   --> -i = ignore case
+   -->-E = use extended regex (| means OR)
+
+6. Searches for:
+   -->X-Frame-Options
+   -->X-Content-Type-Options
+   -->Content-Security-Policy
+   -->Referrer-Policy
+   -->Strict-Transport-Security
+
+7. || -->Run next command only if previous command fails
+
+8. echo "(no security headers found)" --> Display message if none of the specified security headers are present
+
+Purpose: Checks whether a web application is sending important HTTP security headers on multiple ports.
+
+The -nointeractive flag suppresses prompts so the scan runs without waiting for input. Nikto will check hundreds of common paths and patterns. Look for findings that start with + in the output.
+
+On a misconfigured Apache server like this one, expect Nikto to flag the exposed /server-status page, the backup.bak file in the document root, the directory listing on /files/, and multiple missing security header warnings.
+
+
+Pattherns that apply everywhere:
+
+| Misconfiguration                 | Apache                             | Python HTTP                       | Node.js                         | Nginx                                   |
+| -------------------------------- | ---------------------------------- | --------------------------------- | ------------------------------- | --------------------------------------- |
+| Version disclosure in headers    | Yes                                | Yes                               | Partial                         | Yes                                     |
+| Directory listing                | `/files/`                          | Root path                         | N/A                             | `/files/`                               |
+| Exposed status or debug endpoint | `/server-status`                   | N/A                               | `/api/debug/env`, `/api/routes` | `/nginx_status`                         |
+| Sensitive files accessible       | `backup.bak`, `internal-notes.txt` | `.env`, `notes.txt`, `backup.zip` | `config.js`                     | `server-config.txt`, `deploy-notes.txt` |
+| Missing security headers         | All                                | All                               | All                             | All                                     |
+
+**Questions:**
+
+1. Which security header, when missing, allows a page to be embedded in an iframe on another domain?
+--> X-Frame-Options
+2. What finding text does Nikto report when it detects directory indexing on the /files/ path? --> Directory Indexing found.
+
+**Conclusion:**
+
+Key Takeaways:
+
+1 .Response headers are the fastest fingerprinting surface. The Server and X-Powered-By headers reveal software type and sometimes version before you have made a single request to an actual application path.
+2.Python's built-in HTTP server has no access controls of any kind. When it appears in an engagement, assume the entire working directory is readable, including dotfiles such as .env.
+3. Apache's mod_status and directory listing are enabled by default on Ubuntu installs and require active configuration to restrict them. Their presence is common and worth checking on every Apache engagement.
+4.Node.js Express applications in development mode leak stack traces, route lists, and environment variables. Each of those is a finding in its own right, and together they give a complete picture of the application's internals.
+5.Nginx autoindex and stub_status mirror Apache's directory listing and mod_status patterns. The directives differ, but the investigation approach is the same.
+6.Security headers are absent by default on all four server types. An audit with curl -sI and a grep for the header names is a fast, reliable check that belongs in every web server engagement.
+
+**Web Server Attacks 2**
+
+What IIS Version Numbers Tells us:
+
+IIS version numbers map directly to Windows Server releases. This matters because many CVEs are version-specific, and many organisations run IIS on servers that are no longer receiving security updates.
+
+| IIS Version   | Windows Server          | Status                                               |
+| ------------- | ----------------------- | ---------------------------------------------------- |
+| IIS 6.0       | Server 2003             | End of Life (July 2015). No patches issued post-EOL. |
+| IIS 7.0 / 7.5 | Server 2008 / 2008 R2   | End of Life                                          |
+| IIS 8.0 / 8.5 | Server 2012 / 2012 R2   | End of Life                                          |
+| IIS 10.0      | Server 2016, 2019, 2022 | Current                                              |
+
+Note: IIS skipped version 9.x. The numbering jumped directly from 8.5 to 10.0 when Windows Server 2016 shipped. The lab target runs IIS 10.0 on Windows Server 2019.
+
+If you see IIS/6.0 in a server header on a public-facing IP, treat it as compromised until proven otherwise. There is no official Microsoft patch for CVE-2017-7269, which affects IIS 6.0 specifically. We will cover that CVE in Task 7.
+
+IIS Architecture:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
