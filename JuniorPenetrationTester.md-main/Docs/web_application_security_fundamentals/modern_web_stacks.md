@@ -377,7 +377,70 @@ curl -sI http://10.67.162.116:80 | grep -i server
 
 Apache on Ubuntu defaults to ServerTokens OS, which includes the OS label alongside the version number. Knowing the exact version helps you check for known CVEs and understand the server's capabilities.
 
-Directory Listing: 
+**Directory Listing:**
+
+Apache's Options +Indexes directive tells the server to display a file listing when a directory does not have an index.html or similar default file. This is sometimes enabled intentionally for internal file share directories and accidentally left on paths that contain sensitive data.
+
+Browse to the URL : http://MachineIP/Files path
+
+You should see an HTML page with a title of "Index of /files" listing the files available in that directory. Apache's directory listing includes filenames, file sizes, and last-modified dates, which gives you a clear picture of what is there before you decide what to retrieve.
+
+When you find a directory listing, read every file in it. Developers sometimes leave CSV exports, internal notes, or backup files in directories they intended only for casual internal use. Each one is worth checking.
+
+**The mod_status page:**
+
+Apache includes a built-in status page powered by the mod_status module. When correctly configured, it is accessible only from localhost. When misconfigured with Require all granted, it is accessible from any IP. You can access it using http://MACHINE_IP:80/server-status, as shown below:
+
+The status page shows active connections and what paths they are requesting, the total number of requests served since the server started, worker states (idle, writing, reading, closing), and the server version and start time. On a production server, this leaks real-time information about what other users are doing and what internal paths exist. It also confirms the exact server version in the page header.
+
+Info: mod_status is enabled by default on Ubuntu's Apache package and ships with a Require local restriction in conf-available/security.conf. However, a Require all granted directive anywhere in a virtual host configuration silently overrides that restriction, exposing /server-status to all IPs without touching the module config. Always check /server-status even on servers that appear to be using default settings.
+
+**Finding Unlinked Files with Gobuster**
+
+Not everything interesting is linked from a page or visible in a directory listing. Backup files, old configuration copies, and forgotten test files often sit in the document root with no links pointing to them. Tools like Gobuster discover these by guessing paths against a wordlist.
+
+Note: SecLists should be available at /usr/share/wordlists/SecLists/ on the AttackBox. If you are using your own Kali VM and SecLists is not installed, run sudo apt install seclists to get it.
+
+Tip: The full SecLists common.txt wordlist is large. With the -x flag adding three extension variants per word, the scan makes a significant number of requests and can take several minutes on a remote target. If you want a faster result, try running without -x first to find directories, then add -x bak for a targeted extension sweep.
+
+When Gobuster finds a file with a .bak extension, that is almost always worth retrieving. Backup files frequently contain configuration snippets, credentials, or copies of source code.
+
+Also, pay attention to .htpasswd files if they appear in the output. Apache uses .htpasswd to store usernames and hashed passwords for HTTP Basic Authentication. Finding an accessible .htpasswd file gives you a credential hash that can be cracked offline, and confirms that some part of the site uses Basic Auth, which tells you what paths are worth trying authenticated access on.
+
+
+The pattern here is consistent across Apache investigations: check the version header, browse any directory that allows listing, visit /server-status, and use gobuster to find unlinked files. These four steps cover the majority of what a misconfigured Apache server will expose.
+
+
+**Questions:**
+
+1. What Apache module exposes real-time server statistics at /server-status? --> mod_status
+2. What is the flag found in the /files/ directory on Apache? visit http://MachineIP:80/files -->  THM{apache_dir_listing}
+
+
+**Node.js(Express)**
+
+Node.js applications behave differently from Apache and Python HTTP servers. They are not serving static files from a configured document root. They are running application code, and that code decides what to return for every request. That flexibility is powerful, but it is also where many mistakes occur.
+Attackers look at Node.js Express applications specifically because developers often leave development-mode features enabled when they push to production. Debug endpoints, verbose error responses, and exposed environment variables all stem from the same habit: code that worked in development went live as-is. The result is an application that tells you exactly how it is built and, sometimes, what credentials it uses.
+
+Frame work Fingerprinting
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
