@@ -18,3 +18,7 @@ The Burp Dashboard is divided into four quadrants, as labelled in counter-clockw
 3. Issue Activity: This section is specific to Burp Suite Professional. It displays the vulnerabilities identified by the automated scanner, ranked by severity and filterable based on the certainty of the vulnerability.
 
 4. Advisory: The Advisory section provides more detailed information about the identified vulnerabilities, including references and suggested remediations. This information can be exported into a report. In Burp Suite Community, this section may not show any vulnerabilities.
+
+####Connecting through Foxy Proxy:
+
+
