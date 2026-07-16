@@ -19,6 +19,6 @@ The Burp Dashboard is divided into four quadrants, as labelled in counter-clockw
 
 4. Advisory: The Advisory section provides more detailed information about the identified vulnerabilities, including references and suggested remediations. This information can be exported into a report. In Burp Suite Community, this section may not show any vulnerabilities.
 
-####Connecting through Foxy Proxy:
+###Connecting through Foxy Proxy:
 
 
